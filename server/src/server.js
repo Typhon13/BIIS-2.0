@@ -26,6 +26,9 @@ app.get('/api/test-db', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+app.get('/', (req, res) => {
+  res.send('BIIS 2.0 Backend Server is Running');
+});
 
 // Start Server
 app.listen(PORT, () => {
