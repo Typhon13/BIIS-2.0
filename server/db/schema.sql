@@ -8,7 +8,7 @@ CREATE TABLE roles (
     role_name       VARCHAR(50) NOT NULL UNIQUE
 );
 
---USER
+-- USER
 CREATE TABLE users (
     user_id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     username         VARCHAR(80) NOT NULL,
@@ -18,12 +18,14 @@ CREATE TABLE users (
     last_login_at    TIMESTAMPTZ,
     account_status   VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
 
+    is_admin         BOOLEAN NOT NULL DEFAULT FALSE,
+
     CONSTRAINT fk_users_role
         FOREIGN KEY (role_id)
         REFERENCES roles(role_id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
-    );
+);
 
 --USERNAME/EMAIL ER JONNE CASE INSENSITIVE UNIQUENESS
 CREATE UNIQUE INDEX ux_users_username_ci ON users (LOWER(username));
