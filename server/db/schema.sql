@@ -71,6 +71,8 @@ CREATE TABLE notices (
     CONSTRAINT ck_notice_resolved_after_posted
         CHECK (resolved_date IS NULL OR resolved_date >= post_date)
 );
+
+
 --NOTICE ER INDEX
 CREATE INDEX ix_notices_posted_by_user_id ON notices(posted_by_user_id);
 CREATE INDEX ix_notices_post_date ON notices(post_date);
@@ -141,8 +143,93 @@ ALTER TABLE departments
     ON DELETE SET NULL;
 
 
---EIKHANER PARTS BOJHA LAGBE ADD KORINAI YET
+CREATE OR REPLACE FUNCTION sync_hod_flag_from_department()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        IF OLD.head_id IS NOT NULL THEN
+            UPDATE teachers
+               SET is_hod = FALSE
+             WHERE teacher_id = OLD.head_id
+               AND NOT EXISTS (
+                    SELECT 1
+                    FROM departments d
+                    WHERE d.head_id = OLD.head_id
+               );
+        END IF;
+        RETURN OLD;
+    END IF;
 
+    IF NEW.head_id IS NOT NULL THEN
+        IF NOT EXISTS (
+            SELECT 1
+            FROM teachers t
+            WHERE t.teacher_id = NEW.head_id
+              AND t.dept_id = NEW.dept_id
+        ) THEN
+            RAISE EXCEPTION
+                'Department head must be a teacher of the same department.';
+        END IF;
+    END IF;
+
+    IF TG_OP = 'UPDATE'
+       AND OLD.head_id IS DISTINCT FROM NEW.head_id
+       AND OLD.head_id IS NOT NULL THEN
+        UPDATE teachers
+           SET is_hod = FALSE
+         WHERE teacher_id = OLD.head_id
+           AND NOT EXISTS (
+                SELECT 1
+                FROM departments d
+                WHERE d.head_id = OLD.head_id
+           );
+    END IF;
+
+    IF NEW.head_id IS NOT NULL THEN
+        UPDATE teachers
+           SET is_hod = TRUE
+         WHERE teacher_id = NEW.head_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_sync_hod_flag
+AFTER INSERT OR UPDATE OR DELETE
+ON departments
+FOR EACH ROW
+EXECUTE FUNCTION sync_hod_flag_from_department();
+
+-- Validate before assigning/changing a department head.
+CREATE OR REPLACE FUNCTION validate_department_head()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.head_id IS NOT NULL
+       AND NOT EXISTS (
+            SELECT 1
+            FROM teachers t
+            WHERE t.teacher_id = NEW.head_id
+              AND t.dept_id = NEW.dept_id
+       ) THEN
+        RAISE EXCEPTION
+            'Teacher % cannot be head of department % because the teacher belongs to another department.',
+            NEW.head_id, NEW.dept_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_validate_department_head
+BEFORE INSERT OR UPDATE
+ON departments
+FOR EACH ROW
+EXECUTE FUNCTION validate_department_head();
 
 --COURSES
 CREATE TABLE courses (
