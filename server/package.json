@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node test/helpers/check-test-database.js && node --test",
+    "test:auth": "node test/helpers/check-test-database.js && node --test test/auth/auth.test.js",
+    "test:password-reset": "node test/helpers/check-test-database.js && node --test test/auth/password-reset.test.js",
+    "test:admin-bootstrap": "node test/helpers/check-test-database.js && node --test test/admin/admin-bootstrap.test.js",
+    "test:admin-management": "node test/helpers/check-test-database.js && node --test test/admin/admin-management.test.js",
+    "admin:create": "node scripts/create-admin.js",
     "db:init": "node db/init.js",
     "dev": "nodemon src/server.js"
   },
@@ -13,14 +18,20 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "pg": "^8.23.0"
+    "express-rate-limit": "^8.6.2",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^9.0.5",
+    "pg": "^8.23.0",
+    "readline-sync": "^1.4.10"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
   }
-  
 }
-
