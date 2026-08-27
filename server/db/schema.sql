@@ -18,8 +18,6 @@ CREATE TABLE users (
     last_login_at    TIMESTAMPTZ,
     account_status   VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
 
-    is_admin         BOOLEAN NOT NULL DEFAULT FALSE,
-
     CONSTRAINT fk_users_role
         FOREIGN KEY (role_id)
         REFERENCES roles(role_id)
@@ -31,6 +29,42 @@ CREATE TABLE users (
 CREATE UNIQUE INDEX ux_users_username_ci ON users (LOWER(username));
 CREATE UNIQUE INDEX ux_users_email_ci ON users (LOWER(email));
 CREATE INDEX ix_users_role_id ON users(role_id);
+CREATE INDEX ix_users_account_status ON users(account_status);
+
+--AUTH SESSIONS
+CREATE TABLE auth_sessions (
+    session_id          UUID PRIMARY KEY,
+    user_id             BIGINT NOT NULL,
+    refresh_token_hash  VARCHAR(255) NOT NULL UNIQUE,
+    token_family        UUID NOT NULL,
+    expires_at          TIMESTAMPTZ NOT NULL,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked_at          TIMESTAMPTZ,
+    ip_address          INET,
+    user_agent          TEXT,
+
+    CONSTRAINT fk_auth_sessions_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_auth_sessions_expiry
+        CHECK (expires_at > created_at),
+
+    CONSTRAINT ck_auth_sessions_revocation
+        CHECK (revoked_at IS NULL OR revoked_at >= created_at)
+);
+
+CREATE INDEX ix_auth_sessions_user_id
+    ON auth_sessions(user_id);
+
+CREATE INDEX ix_auth_sessions_expires_at
+    ON auth_sessions(expires_at);
+
+CREATE INDEX ix_auth_sessions_active_user
+    ON auth_sessions(user_id)
+    WHERE revoked_at IS NULL;
 
 
 --ADDRESS
@@ -83,22 +117,29 @@ CREATE INDEX ix_notices_target_audience ON notices(target_audience);
 CREATE TABLE password_reset_requests (
     request_id       BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id          BIGINT NOT NULL,
-    request_date     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    reset_token      VARCHAR(255) NOT NULL UNIQUE,
-    status           VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    token_hash       VARCHAR(255) NOT NULL UNIQUE,
+    expires_at       TIMESTAMPTZ NOT NULL,
+    used_at          TIMESTAMPTZ,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_password_reset_user
         FOREIGN KEY (user_id)
         REFERENCES users(user_id)
         ON UPDATE CASCADE
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_password_reset_expiry
+        CHECK (expires_at > created_at),
+
+    CONSTRAINT ck_password_reset_usage
+        CHECK (used_at IS NULL OR used_at >= created_at)
 );
 --PASS INDEX
 CREATE INDEX ix_password_reset_user_id
     ON password_reset_requests(user_id);
 
-CREATE INDEX ix_password_reset_status
-    ON password_reset_requests(status);
+CREATE INDEX ix_password_reset_expires_at
+    ON password_reset_requests(expires_at);
 
 --DEPARTMENT
 CREATE TABLE departments (
@@ -673,9 +714,9 @@ CREATE INDEX ix_attendance_recorded_date ON attendance(recorded_date);
 --DEFAULT ROLES
 INSERT INTO roles (role_name)
 VALUES
-    ('Admin'),
-    ('Teacher'),
-    ('Student')
+    ('ADMIN'),
+    ('TEACHER'),
+    ('STUDENT')
 ON CONFLICT (role_name) DO NOTHING;
 
 COMMIT;
