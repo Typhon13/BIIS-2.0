@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import buetLogo from '../assets/buet-logo.png'
+import { Link, useNavigate } from 'react-router-dom'
+
+import BiisLayout from '../components/BiisLayout'
 import { useAuth } from '../context/AuthContext'
 
 function LoginPage() {
@@ -30,8 +31,17 @@ function LoginPage() {
     setIsSubmitting(true)
 
     try {
-      await login(identifier.trim(), password)
-      navigate('/dashboard', { replace: true })
+      const user = await login(identifier.trim(), password)
+
+      const dashboardByRole = {
+        ADMIN: '/dashboard',
+        TEACHER: '/dashboard',
+        STUDENT: '/dashboard',
+      }
+
+      navigate(dashboardByRole[user.role] || '/dashboard', {
+        replace: true,
+      })
     } catch (requestError) {
       setError(requestError.message || 'Login failed. Please try again.')
     } finally {
@@ -40,120 +50,77 @@ function LoginPage() {
   }
 
   return (
-    <div className="page">
-      <main className="biis-shell">
-        <header className="banner">
-          <img className="buet-logo" src={buetLogo} alt="BUET logo" />
+    <BiisLayout>
+      <form className="login-box" onSubmit={handleSubmit}>
+        <fieldset disabled={isSubmitting}>
+          <legend>BIIS2.0 Login</legend>
 
-          <div className="banner-text">
-            <h1>বাংলাদেশ প্রকৌশল বিশ্ববিদ্যালয়</h1>
-            <p>
-              BUET INSTITUTIONAL INFORMATION SYSTEM
-              <strong> 2.0</strong>
-            </p>
+          <div className="form-row">
+            <label htmlFor="identifier">UserID :</label>
+
+            <input
+              id="identifier"
+              type="text"
+              value={identifier}
+              onChange={(event) => setIdentifier(event.target.value)}
+              autoComplete="username"
+              autoFocus
+            />
           </div>
 
-          <div className="campus-fade" aria-hidden="true" />
-        </header>
+          <div className="form-row">
+            <label htmlFor="password">Password :</label>
 
-        <nav className="top-navigation">
-          <a href="https://www.buet.ac.bd/" target="_blank" rel="noreferrer">
-            BUET Home
-          </a>
-        </nav>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
 
-        <div className="content-layout">
-          <aside className="sidebar">
-            <div className="sidebar-top" />
+          {error && (
+            <p className="login-message error-message" role="alert">
+              {error}
+            </p>
+          )}
 
-            <a
-              className="webmail-link"
-              href="https://mail.google.com/"
-              target="_blank"
-              rel="noreferrer"
+          <p className="password-note">
+            If your password contains capital letters and digits,
+            <br />
+            they must be typed the same way every time you log in.
+          </p>
+
+          <div className="button-row">
+            <button type="submit" className="silver-button">
+              {isSubmitting ? 'Wait...' : 'Login'}
+            </button>
+
+            <button
+              type="button"
+              className="silver-button"
+              onClick={resetForm}
             >
-              <span className="mail-icon">📧</span>
-              <span>BUET WebMail</span>
-            </a>
-          </aside>
+              Reset
+            </button>
+          </div>
 
-          <section className="login-area">
-            <form className="login-box" onSubmit={handleSubmit}>
-              <fieldset disabled={isSubmitting}>
-                <legend>BIIS2.0 Login</legend>
+          <Link className="forgot-link" to="/forgot-password">
+            (New) Forgot password? Click Here.
+          </Link>
 
-                <div className="form-row">
-                  <label htmlFor="identifier">UserID :</label>
-                  <input
-                    id="identifier"
-                    type="text"
-                    value={identifier}
-                    onChange={(event) => setIdentifier(event.target.value)}
-                    autoComplete="username"
-                    autoFocus
-                  />
-                </div>
+          <Link className="register-link" to="/register">
+            New student? Create an account.
+          </Link>
 
-                <div className="form-row">
-                  <label htmlFor="password">Password :</label>
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    autoComplete="current-password"
-                  />
-                </div>
-
-                {error && (
-                  <p className="login-message error-message" role="alert">
-                    {error}
-                  </p>
-                )}
-
-                <p className="password-note">
-                  If your password contains capital letters and digits,
-                  <br />
-                  they must be typed the same way every time you log in.
-                </p>
-
-                <div className="button-row">
-                  <button type="submit" className="silver-button">
-                    {isSubmitting ? 'Wait...' : 'Login'}
-                  </button>
-
-                  <button
-                    type="button"
-                    className="silver-button"
-                    onClick={resetForm}
-                  >
-                    Reset
-                  </button>
-                </div>
-
-                <a className="forgot-link" href="/forgot-password">
-                  (New) Forgot password? Click Here.
-                </a>
-
-                <a className="register-link" href="/register">
-                  New student? Create an account.
-                </a>
-
-                <p className="support-message">
-                  For any technical issue, please email to
-                  support@iict.buet.ac.bd
-                </p>
-              </fieldset>
-            </form>
-          </section>
-        </div>
-      </main>
-
-      <footer className="footer">
-        Bangladesh University of Engineering &amp; Technology (BUET),
-        Dhaka-1000, Bangladesh. 2026 © All rights reserved, BUET — BIIS2.0
-      </footer>
-    </div>
+          <p className="support-message">
+            For any technical issue, please email to
+            support@iict.buet.ac.bd
+          </p>
+        </fieldset>
+      </form>
+    </BiisLayout>
   )
 }
 

@@ -453,3 +453,79 @@
     gap: 5px;
   }
 }
+
+/* Student registration */
+
+.registration-box fieldset {
+  min-height: 590px;
+  padding-top: 42px;
+}
+
+.registration-box .form-row {
+  margin-bottom: 14px;
+}
+
+.password-requirements {
+  margin: 22px auto 10px;
+  color: #444;
+  text-align: center;
+  font: 15px/1.5 Arial, Helvetica, sans-serif;
+}
+
+.success-message {
+  color: #176b2c;
+}
+
+.registration-buttons {
+  margin-top: 28px;
+}
+
+@media (max-width: 600px) {
+  .registration-box fieldset {
+    min-height: auto;
+    padding-top: 30px;
+  }
+}
+
+/* Forgot password */
+
+.forgot-password-box fieldset {
+  min-height: 430px;
+}
+
+.auth-instruction {
+  width: min(620px, 100%);
+  margin: 20px auto 45px;
+  text-align: center;
+  font: 17px/1.6 Arial, Helvetica, sans-serif;
+}
+
+.forgot-password-buttons {
+  margin-top: 45px;
+}
+
+/* Reset password */
+
+.reset-password-box fieldset {
+  min-height: 480px;
+}
+
+.reset-password-box .form-row:first-of-type {
+  margin-top: 30px;
+}
+
+.reset-password-buttons {
+  margin-top: 35px;
+}
+
+.reset-password-box fieldset {
+  min-height: 480px;
+}
+
+.reset-password-box .form-row:first-of-type {
+  margin-top: 30px;
+}
+
+.reset-password-buttons {
+  margin-top: 35px;
+}

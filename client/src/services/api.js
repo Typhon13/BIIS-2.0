@@ -33,7 +33,25 @@ export const authApi = {
       body: JSON.stringify(credentials),
     })
   },
+  register(details) {
+  return apiRequest('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(details),
+  })
+},
+forgotPassword(email) {
+  return apiRequest('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+},
 
+resetPassword(details) {
+  return apiRequest('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(details),
+  })
+},
   refresh() {
     return apiRequest('/auth/refresh', {
       method: 'POST',
