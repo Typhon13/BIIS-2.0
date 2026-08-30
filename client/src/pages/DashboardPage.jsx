@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminUserManagement from '../components/admin/AdminUserManagement'
@@ -256,6 +256,161 @@ function DashboardPage() {
     )
   }
 
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [profileForm, setProfileForm] = useState({
+    name: user.username || '',
+    levelTerm: 'Level 1 / Term 1',
+    mobileNumber: '017XXXXXXXX',
+    emailAddress: user.email || '',
+    mobileBankingAccount: 'Not provided',
+    presentAddress: 'Dhaka, Bangladesh',
+    permanentAddress: 'Jessore, Bangladesh',
+    contactPerson: 'Not provided',
+    birthRegistrationNo: '201234567890',
+    birthDate: '01-01-2005',
+    nid: '1234567890',
+    nameBangla: '',
+  })
+
+  useEffect(() => {
+    setProfileForm((current) => ({
+      ...current,
+      name: user.username || current.name,
+      emailAddress: user.email || current.emailAddress,
+    }))
+  }, [user.username, user.email])
+
+  function handleProfileChange(event) {
+    const { name, value } = event.target
+    setProfileForm((current) => ({
+      ...current,
+      [name]: value,
+    }))
+  }
+
+  function renderProfile() {
+    const leftColumn = [
+      { key: 'name', label: 'Name', value: profileForm.name },
+      {
+        key: 'levelTerm',
+        label: 'Level/Term',
+        value: profileForm.levelTerm,
+      },
+      {
+        key: 'mobileNumber',
+        label: 'Mobile Number',
+        value: profileForm.mobileNumber,
+      },
+      {
+        key: 'emailAddress',
+        label: 'Email Address',
+        value: profileForm.emailAddress,
+      },
+      {
+        key: 'mobileBankingAccount',
+        label: 'Mobile Banking Account',
+        value: profileForm.mobileBankingAccount,
+      },
+      {
+        key: 'presentAddress',
+        label: 'Present / Residential Address',
+        value: profileForm.presentAddress,
+      },
+    ]
+
+    const rightColumn = [
+      {
+        key: 'permanentAddress',
+        label: 'Permanent Address',
+        value: profileForm.permanentAddress,
+      },
+      {
+        key: 'contactPerson',
+        label: "Contact Person's Name, Address & Mobile Number",
+        value: profileForm.contactPerson,
+      },
+      {
+        key: 'birthRegistrationNo',
+        label: 'Birth Registration No',
+        value: profileForm.birthRegistrationNo,
+      },
+      {
+        key: 'birthDate',
+        label: 'Birth Date',
+        value: profileForm.birthDate,
+      },
+      { key: 'nid', label: 'NID', value: profileForm.nid },
+      { key: 'nameBangla', label: 'Name (Bangla)', value: profileForm.nameBangla },
+    ]
+
+    return (
+      <section className="student-profile-card">
+        <div className="student-profile-header">
+          Student&apos;s Contact Information
+        </div>
+
+        <div className="student-profile-body">
+          <div className="student-profile-photo-panel">
+            <div className="student-profile-photo" aria-label="Student photo">
+              <span>PHOTO</span>
+            </div>
+          </div>
+
+          <div className="student-profile-form-wrap">
+            <div className="student-profile-fields">
+              <div className="student-profile-column">
+                {leftColumn.map((row) => (
+                  <div className="profile-field-row" key={row.key}>
+                    <label className="profile-field-label">{row.label}</label>
+
+                    {isEditingProfile ? (
+                      <input
+                        className="profile-field-input"
+                        name={row.key}
+                        value={row.value}
+                        onChange={handleProfileChange}
+                      />
+                    ) : (
+                      <div className="profile-field-display">{row.value || '—'}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="student-profile-column student-profile-column-right">
+                {rightColumn.map((row) => (
+                  <div className="profile-field-row" key={row.key}>
+                    <label className="profile-field-label">{row.label}</label>
+
+                    {isEditingProfile ? (
+                      <input
+                        className="profile-field-input"
+                        name={row.key}
+                        value={row.value}
+                        onChange={handleProfileChange}
+                      />
+                    ) : (
+                      <div className="profile-field-display">{row.value || '—'}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="student-profile-actions">
+          <button
+            type="button"
+            onClick={() => setIsEditingProfile((current) => !current)}
+          >
+            {isEditingProfile ? 'Save contact information' : 'Edit contact information'}
+          </button>
+        </div>
+      </section>
+    )
+  }
+
   function renderModule() {
     if (
       activeItem === 'User Management' &&
@@ -293,7 +448,9 @@ function DashboardPage() {
     >
       {activeItem === 'Overview'
         ? renderOverview()
-        : renderModule()}
+        : activeItem === 'My Information'
+          ? renderProfile()
+          : renderModule()}
     </DashboardLayout>
   )
 }
