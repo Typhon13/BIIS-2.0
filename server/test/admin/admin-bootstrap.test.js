@@ -149,12 +149,12 @@ test('missing ADMIN role fails safely and restores the shared role row', async (
   const role = (await db.query("SELECT role_id FROM roles WHERE role_name = 'ADMIN'")).rows[0];
   assert.ok(role);
   try {
-    await db.query("UPDATE roles SET role_name = 'ADMIN_TEST_MISSING' WHERE role_id = $1", [role.role_id]);
+    await db.query('DELETE FROM roles WHERE role_id = $1', [role.role_id]);
     await assert.rejects(
       adminBootstrapService.createInitialAdmin({ ...identity('missing-role'), password, confirmPassword: password }),
       (error) => error.message === 'ADMIN_ROLE_NOT_FOUND'
     );
   } finally {
-    await db.query("UPDATE roles SET role_name = 'ADMIN' WHERE role_id = $1", [role.role_id]);
+    await db.query("INSERT INTO roles (role_name) VALUES ('ADMIN') ON CONFLICT (role_name) DO NOTHING");
   }
 });

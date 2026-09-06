@@ -33,13 +33,7 @@ function LoginPage() {
     try {
       const user = await login(identifier.trim(), password)
 
-      const dashboardByRole = {
-        ADMIN: '/dashboard',
-        TEACHER: '/dashboard',
-        STUDENT: '/dashboard',
-      }
-
-      navigate(dashboardByRole[user.role] || '/dashboard', {
+      navigate(`/dashboard/${user.role.toLowerCase()}`, {
         replace: true,
       })
     } catch (requestError) {

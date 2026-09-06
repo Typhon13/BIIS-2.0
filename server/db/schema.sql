@@ -5,7 +5,10 @@ SET search_path TO public;
 --ROLE
 CREATE TABLE roles (
     role_id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    role_name       VARCHAR(50) NOT NULL UNIQUE
+    role_name       VARCHAR(50) NOT NULL UNIQUE,
+
+    CONSTRAINT ck_roles_supported_name
+        CHECK (role_name IN ('ADMIN', 'TEACHER', 'STUDENT'))
 );
 
 -- USER
@@ -22,7 +25,10 @@ CREATE TABLE users (
         FOREIGN KEY (role_id)
         REFERENCES roles(role_id)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT ck_users_account_status
+        CHECK (account_status IN ('ACTIVE', 'SUSPENDED', 'INACTIVE'))
 );
 
 --USERNAME/EMAIL ER JONNE CASE INSENSITIVE UNIQUENESS
@@ -288,7 +294,10 @@ CREATE TABLE courses (
         ON DELETE RESTRICT,
 
     CONSTRAINT ck_courses_credit_positive
-        CHECK (credit > 0)
+        CHECK (credit > 0),
+
+    CONSTRAINT uq_courses_course_code
+        UNIQUE (course_code)
 );
 
 --PROGRAM
@@ -335,7 +344,7 @@ CREATE TABLE offered_courses (
     offered_course_id   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     course_id           BIGINT NOT NULL,
     semester_id         BIGINT NOT NULL,
-    teacher_id          BIGINT NOT NULL,
+    teacher_id          BIGINT,
     section             VARCHAR(30) NOT NULL,
     seat_capacity       INTEGER NOT NULL,
 
@@ -426,8 +435,8 @@ CREATE TABLE students (
     user_id                BIGINT NOT NULL UNIQUE,
     student_id_number      VARCHAR(50) NOT NULL UNIQUE,
     name                   VARCHAR(150) NOT NULL,
-    dept_id                BIGINT NOT NULL,
-    batch_id               BIGINT NOT NULL,
+    dept_id                BIGINT,
+    batch_id               BIGINT,
     adviser_id             BIGINT,
     phone                  VARCHAR(30),
     current_level_term     VARCHAR(30),
@@ -469,20 +478,22 @@ DECLARE
     batch_dept_id   BIGINT;
     adviser_dept_id BIGINT;
 BEGIN
-    SELECT p.dept_id
-      INTO batch_dept_id
-      FROM batches b
-      JOIN programs p ON p.program_id = b.program_id
-     WHERE b.batch_id = NEW.batch_id;
+    IF NEW.batch_id IS NOT NULL THEN
+        SELECT p.dept_id
+          INTO batch_dept_id
+          FROM batches b
+          JOIN programs p ON p.program_id = b.program_id
+         WHERE b.batch_id = NEW.batch_id;
 
-    IF batch_dept_id IS NULL THEN
-        RAISE EXCEPTION 'Invalid batch_id: %', NEW.batch_id;
-    END IF;
+        IF batch_dept_id IS NULL THEN
+            RAISE EXCEPTION 'Invalid batch_id: %', NEW.batch_id;
+        END IF;
 
-    IF NEW.dept_id <> batch_dept_id THEN
-        RAISE EXCEPTION
-            'Student department (%) must match batch/program department (%).',
-            NEW.dept_id, batch_dept_id;
+        IF NEW.dept_id IS NULL OR NEW.dept_id <> batch_dept_id THEN
+            RAISE EXCEPTION
+                'Student department (%) must match batch/program department (%).',
+                NEW.dept_id, batch_dept_id;
+        END IF;
     END IF;
 
     IF NEW.adviser_id IS NOT NULL THEN
@@ -604,6 +615,7 @@ CREATE TABLE results (
     student_id         BIGINT NOT NULL,
     marks_obtained     NUMERIC(7,2) NOT NULL,
     grade              VARCHAR(10),
+    published_at       TIMESTAMPTZ,
 
     CONSTRAINT fk_results_exam
         FOREIGN KEY (exam_id)
@@ -625,6 +637,9 @@ CREATE TABLE results (
 );
 
 CREATE INDEX ix_results_student_id ON results(student_id);
+CREATE INDEX ix_results_published_student_id
+    ON results(student_id, published_at)
+    WHERE published_at IS NOT NULL;
 
 CREATE OR REPLACE FUNCTION validate_result()
 RETURNS TRIGGER

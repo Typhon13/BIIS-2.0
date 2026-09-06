@@ -3,6 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 require('dotenv').config();
+const { applyCompatibilityMigrations } = require('../../db/migrations');
 
 const configuredDevelopmentDatabase = process.env.DB_NAME;
 
@@ -69,6 +70,17 @@ async function initializeTestDatabase() {
   requireTestEnvironment();
   await ensureTestDatabaseExists();
   await ensureSchemaOnce();
+  const client = await testPool.connect();
+  try {
+    await client.query('BEGIN');
+    await applyCompatibilityMigrations(client);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function closeTestDatabase() {

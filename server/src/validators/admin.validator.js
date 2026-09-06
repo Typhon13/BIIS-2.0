@@ -20,4 +20,15 @@ const listRules = () => [query('page').optional().isInt({ min: 1 }).withMessage(
 const statusRules = () => [...userIdRules(), body('status').isString().withMessage('Status is required'), ...rejectUnexpected(forbiddenFields)];
 const roleRules = () => [...userIdRules(), body('role').isString().withMessage('Role is required'), ...rejectUnexpected(forbiddenFields)];
 
-module.exports = { listRules, userIdRules, statusRules, roleRules, handleAdminValidation };
+// Structural validation only. Whether `teacher` fields are required
+// depends on `role`, which is a business rule enforced in admin.service.js
+// (keeps the required-when-TEACHER logic in one place, with clear error codes).
+const createUserRules = () => [
+  body('username').isString().trim().isLength({ min: 3, max: 80 }).withMessage('Username must be 3-80 characters'),
+  body('email').isEmail().withMessage('A valid email is required'),
+  body('password').isString().isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  body('role').isString().isIn(['ADMIN', 'TEACHER']).withMessage('Role must be ADMIN or TEACHER'),
+  body('teacher').optional().isObject().withMessage('Teacher profile must be an object'),
+];
+
+module.exports = { listRules, userIdRules, statusRules, roleRules, createUserRules, handleAdminValidation };

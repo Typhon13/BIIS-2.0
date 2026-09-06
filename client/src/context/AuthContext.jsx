@@ -36,6 +36,47 @@ export function AuthProvider({ children }) {
     restoreSession()
   }, [])
 
+  useEffect(() => {
+    const timeoutMinutes = Number(import.meta.env.VITE_IDLE_LOGOUT_MINUTES || 30)
+    const timeoutMs = Math.max(timeoutMinutes, 1) * 60 * 1000
+    let timer
+    const resetTimer = () => {
+      window.clearTimeout(timer)
+      if (accessToken && user) {
+        timer = window.setTimeout(async () => {
+          await logout()
+          window.dispatchEvent(new CustomEvent('biis-idle-logout'))
+        }, timeoutMs)
+      }
+    }
+    const events = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart']
+    events.forEach((eventName) => window.addEventListener(eventName, resetTimer, { passive: true }))
+    resetTimer()
+    return () => {
+      window.clearTimeout(timer)
+      events.forEach((eventName) => window.removeEventListener(eventName, resetTimer))
+    }
+  }, [accessToken, user])
+
+  useEffect(() => {
+    function handleRefreshedSession(event) {
+      setAccessToken(event.detail?.accessToken || null)
+      setUser(event.detail?.user || null)
+    }
+
+    function handleExpiredSession() {
+      setAccessToken(null)
+      setUser(null)
+    }
+
+    window.addEventListener('biis-auth-refreshed', handleRefreshedSession)
+    window.addEventListener('biis-auth-expired', handleExpiredSession)
+    return () => {
+      window.removeEventListener('biis-auth-refreshed', handleRefreshedSession)
+      window.removeEventListener('biis-auth-expired', handleExpiredSession)
+    }
+  }, [])
+
   async function login(identifier, password) {
     const response = await authApi.login({ identifier, password })
 

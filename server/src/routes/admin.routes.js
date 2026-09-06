@@ -2,11 +2,12 @@ const express = require('express');
 const adminController = require('../controllers/admin.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorizeRoles } = require('../middleware/authorize.middleware');
-const { listRules, userIdRules, statusRules, roleRules, handleAdminValidation } = require('../validators/admin.validator');
+const { listRules, userIdRules, statusRules, roleRules, createUserRules, handleAdminValidation } = require('../validators/admin.validator');
 
 const router = express.Router();
 const adminOnly = [authenticate, authorizeRoles('ADMIN')];
 
+router.post('/users', ...adminOnly, createUserRules(), handleAdminValidation, adminController.createUser);
 router.get('/users', ...adminOnly, listRules(), handleAdminValidation, adminController.list);
 router.get('/users/:userId', ...adminOnly, userIdRules(), handleAdminValidation, adminController.getOne);
 router.patch('/users/:userId/status', ...adminOnly, statusRules(), handleAdminValidation, adminController.updateStatus);

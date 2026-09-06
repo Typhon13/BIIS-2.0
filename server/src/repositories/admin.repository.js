@@ -344,9 +344,72 @@ async function updateRole(userId, roleName) {
   }
 }
 
+async function createUser({ username, email, passwordHash, roleId, roleName, teacherProfile }) {
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const userResult = await client.query(
+      `INSERT INTO users (username, email, password_hash, role_id, account_status)
+       VALUES ($1, $2, $3, $4, 'ACTIVE')
+       RETURNING user_id, username, email, account_status`,
+      [username, email, passwordHash, roleId]
+    );
+
+    const user = userResult.rows[0];
+
+    if (roleName === 'TEACHER') {
+      await client.query(
+        `INSERT INTO teachers (user_id, name, dept_id, designation, phone, is_hod)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          user.user_id,
+          teacherProfile.name,
+          teacherProfile.deptId,
+          teacherProfile.designation || null,
+          teacherProfile.phone || null,
+          teacherProfile.isHod || false,
+        ]
+      );
+    }
+
+    await client.query('COMMIT');
+
+    return {
+      userId: String(user.user_id),
+      username: user.username,
+      email: user.email,
+      accountStatus: user.account_status,
+      role: roleName,
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+
+    if (error.code === '23505') {
+      if (error.constraint === 'ux_users_username_ci') throw new Error('USERNAME_TAKEN');
+      if (error.constraint === 'ux_users_email_ci') throw new Error('EMAIL_TAKEN');
+      throw new Error('DUPLICATE_USER');
+    }
+
+    if (error.code === '23503') {
+      throw new Error('DEPARTMENT_NOT_FOUND');
+    }
+
+    if (['USERNAME_TAKEN', 'EMAIL_TAKEN', 'DUPLICATE_USER', 'DEPARTMENT_NOT_FOUND'].includes(error.message)) {
+      throw error;
+    }
+
+    throw new Error('ADMIN_CREATE_USER_FAILED');
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   listUsers,
   findUserById,
   updateStatus,
   updateRole,
+  createUser,
 };
