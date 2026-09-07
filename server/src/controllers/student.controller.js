@@ -2,6 +2,9 @@ const studentService = require('../services/student.service');
 
 const errors = {
   INVALID_OFFERING_ID: [400, 'Invalid offering ID'],
+  INVALID_REGISTRATION_ID: [400, 'Invalid registration ID'],
+  NOT_FOUND: [404, 'Resource not found'],
+  FORBIDDEN: [403, 'Forbidden'],
   STUDENT_PROFILE_NOT_FOUND: [403, 'Student profile is unavailable'],
   OFFERING_NOT_FOUND: [404, 'Course offering not found'],
   DUPLICATE_ENROLLMENT: [409, 'Already enrolled in this offering'],
@@ -17,9 +20,10 @@ function handleError(error, res) {
 
 async function listOfferings(req, res) { try { return res.json({ success: true, data: await studentService.listOfferings() }); } catch (error) { return handleError(error, res); } }
 async function enroll(req, res) { try { return res.status(201).json({ success: true, data: await studentService.enroll(req.user.userId, req.params.offeringId) }); } catch (error) { return handleError(error, res); } }
+async function enrollment(req, res) { try { return res.json({ success: true, data: await studentService.getEnrollment(req.user.userId, req.params.registrationId) }); } catch (error) { return handleError(error, res); } }
 async function listEnrollments(req, res) { try { return res.json({ success: true, data: await studentService.listEnrollments(req.user.userId) }); } catch (error) { return handleError(error, res); } }
 async function listResults(req, res) { try { return res.json({ success: true, data: await studentService.listResults(req.user.userId) }); } catch (error) { return handleError(error, res); } }
 async function profile(req, res) { try { return res.json({ success: true, data: await studentService.profile(req.user.userId) }); } catch (error) { return handleError(error, res); } }
 async function calendar(req, res) { try { return res.json({ success: true, data: await studentService.calendar() }); } catch (error) { return handleError(error, res); } }
 
-module.exports = { listOfferings, enroll, listEnrollments, listResults, profile, calendar };
+module.exports = { listOfferings, enroll, enrollment, listEnrollments, listResults, profile, calendar };

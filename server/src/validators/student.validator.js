@@ -8,6 +8,7 @@ function handleStudentValidation(req, res, next) {
 }
 
 const offeringParamRules = () => [idParam('offeringId')];
+const registrationParamRules = () => [idParam('registrationId')];
 const enrollmentRules = () => [
   body().custom((value) => {
     if (Object.keys(value || {}).length > 0) throw new Error('Enrollment body must be empty');
@@ -15,4 +16,4 @@ const enrollmentRules = () => [
   }),
 ];
 
-module.exports = { handleStudentValidation, offeringParamRules, enrollmentRules };
+module.exports = { handleStudentValidation, offeringParamRules, registrationParamRules, enrollmentRules };

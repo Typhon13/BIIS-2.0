@@ -1,4 +1,5 @@
 const teacherRepository = require('../repositories/teacher.repository');
+const { assertTeacherOwnership } = require('../utils/ownership.utils');
 
 function id(value, code) {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) throw new Error(code);
@@ -32,14 +33,14 @@ async function listOfferings(userId) {
 async function students(userId, offeringIdValue) {
   const teacherId = await requireTeacher(userId);
   const offeringId = id(offeringIdValue, 'INVALID_OFFERING_ID');
-  if (!(await teacherRepository.findOwnedOffering(offeringId, teacherId))) throw new Error('OFFERING_NOT_OWNED');
+  await assertTeacherOwnership(userId, offeringId, 'offering');
   return teacherRepository.listEnrolledStudents(offeringId, teacherId);
 }
 
 async function exams(userId, offeringIdValue) {
   const teacherId = await requireTeacher(userId);
   const offeringId = id(offeringIdValue, 'INVALID_OFFERING_ID');
-  if (!(await teacherRepository.findOwnedOffering(offeringId, teacherId))) throw new Error('OFFERING_NOT_OWNED');
+  await assertTeacherOwnership(userId, offeringId, 'offering');
   return teacherRepository.listExams(offeringId, teacherId);
 }
 
@@ -50,7 +51,7 @@ async function createExam(userId, offeringIdValue, body) {
   const date = typeof body.date === 'string' ? body.date : '';
   const maximumMarks = Number(body.maximumMarks);
   if (!type || type.length > 50 || !/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date)) || !Number.isFinite(maximumMarks) || maximumMarks <= 0 || maximumMarks > 99999.99) throw new Error('INVALID_EXAM');
-  if (!(await teacherRepository.findOwnedOffering(offeringId, teacherId))) throw new Error('OFFERING_NOT_OWNED');
+  await assertTeacherOwnership(userId, offeringId, 'offering');
   return teacherRepository.createExam({
     offeringId,
     teacherId,
@@ -68,9 +69,10 @@ async function updateResult(userId, enrollmentIdValue, body) {
   const examId = id(String(body.examId || ''), 'INVALID_EXAM_ID');
   const marks = Number(body.marks);
   if (!Number.isFinite(marks) || marks < 0) throw new Error('INVALID_MARKS');
+  await assertTeacherOwnership(userId, enrollmentId, 'enrollment');
   const exam = await teacherRepository.findEnrollmentExam(enrollmentId, examId);
   if (!exam) throw new Error('ENROLLMENT_OR_EXAM_NOT_FOUND');
-  if (String(exam.teacher_id) !== String(teacherId)) throw new Error('OFFERING_NOT_OWNED');
+  await assertTeacherOwnership(userId, examId, 'exam');
   const maximumMarks = Number(exam.total_marks);
   if (marks > maximumMarks) throw new Error('MARKS_EXCEED_MAXIMUM');
   return teacherRepository.upsertResult({ enrollmentId, teacherId, examId, marks, grade: gradeForMarks(marks, maximumMarks) });
@@ -79,6 +81,7 @@ async function updateResult(userId, enrollmentIdValue, body) {
 async function publish(userId, resultIdValue) {
   const teacherId = await requireTeacher(userId);
   const resultId = id(resultIdValue, 'INVALID_RESULT_ID');
+  await assertTeacherOwnership(userId, resultId, 'result');
   return teacherRepository.publishResult(resultId, teacherId);
 }
 

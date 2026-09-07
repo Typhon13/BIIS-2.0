@@ -13,6 +13,8 @@ const errors = {
   ENROLLMENT_OR_EXAM_NOT_FOUND: [404, 'Enrollment or exam not found'],
   EXAM_NOT_FOUND: [404, 'Exam not found'],
   RESULT_NOT_OWNED: [403, 'Forbidden'],
+  NOT_FOUND: [404, 'Resource not found'],
+  FORBIDDEN: [403, 'Forbidden'],
 };
 
 function handleError(error, res) {

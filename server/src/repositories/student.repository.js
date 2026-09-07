@@ -159,6 +159,32 @@ async function listEnrollments(studentId) {
   }));
 }
 
+async function findEnrollmentById(registrationId) {
+  const result = await db.query(
+    `SELECT r.registration_id, r.registration_date, r.status,
+            oc.offered_course_id, oc.section,
+            c.course_id, c.course_code, c.course_title, c.credit,
+            s.semester_id, s.semester_name, s.academic_year
+       FROM registrations r
+       JOIN offered_courses oc ON oc.offered_course_id = r.offered_course_id
+       JOIN courses c ON c.course_id = oc.course_id
+       JOIN semesters s ON s.semester_id = oc.semester_id
+      WHERE r.registration_id = $1`,
+    [registrationId],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    enrollmentId: String(row.registration_id),
+    offeringId: String(row.offered_course_id),
+    section: row.section,
+    status: row.status,
+    registrationDate: row.registration_date,
+    course: { courseId: String(row.course_id), code: row.course_code, title: row.course_title, credit: Number(row.credit) },
+    term: { termId: String(row.semester_id), name: row.semester_name, academicYear: row.academic_year },
+  };
+}
+
 async function listPublishedResults(studentId) {
   const result = await db.query(
     `SELECT r.result_id, r.marks_obtained, r.grade, r.published_at,
@@ -183,4 +209,4 @@ async function listPublishedResults(studentId) {
   }));
 }
 
-module.exports = { findStudentIdByUserId, findProfileByUserId, listCalendar, listAvailableOfferings, enroll, listEnrollments, listPublishedResults };
+module.exports = { findStudentIdByUserId, findProfileByUserId, listCalendar, listAvailableOfferings, enroll, findEnrollmentById, listEnrollments, listPublishedResults };
