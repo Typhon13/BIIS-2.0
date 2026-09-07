@@ -158,4 +158,50 @@ export const adminApi = {
       body: JSON.stringify(updates),
     })
   },
+
+  listTeachers(accessToken, filters = {}) {
+    const parameters = new URLSearchParams()
+
+    parameters.set('page', String(filters.page || 1))
+    parameters.set('limit', String(filters.limit || 10))
+
+    if (filters.search) {
+      parameters.set('search', filters.search)
+    }
+
+    if (filters.deptId) {
+      parameters.set('deptId', filters.deptId)
+    }
+
+    return apiRequest(`/admin/teachers?${parameters.toString()}`, {
+      headers: authorizationHeaders(accessToken),
+    })
+  },
+
+  createTeacher(accessToken, teacher) {
+    return apiRequest('/admin/teachers', {
+      method: 'POST',
+      headers: authorizationHeaders(accessToken),
+      body: JSON.stringify(teacher),
+    })
+  },
+
+  listStudents(accessToken, filters = {}) {
+    const parameters = new URLSearchParams()
+    parameters.set('page', String(filters.page || 1))
+    parameters.set('limit', String(filters.limit || 10))
+    if (filters.search) parameters.set('search', filters.search)
+    if (filters.deptId) parameters.set('deptId', filters.deptId)
+    return apiRequest(`/admin/students?${parameters.toString()}`, {
+      headers: authorizationHeaders(accessToken),
+    })
+  },
+
+  createStudent(accessToken, student) {
+    return apiRequest('/admin/students', {
+      method: 'POST',
+      headers: authorizationHeaders(accessToken),
+      body: JSON.stringify(student),
+    })
+  },
 }

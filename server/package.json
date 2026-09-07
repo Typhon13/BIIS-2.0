@@ -10,6 +10,9 @@
     "test:admin-bootstrap": "node test/helpers/check-test-database.js && node --test test/admin/admin-bootstrap.test.js",
     "test:admin-management": "node test/helpers/check-test-database.js && node --test test/admin/admin-management.test.js",
     "admin:create": "node scripts/create-admin.js",
+    "admin:reset": "node scripts/reset-admin.js",
+    "db:seed-buet-departments": "node scripts/seed-buet-departments.js",
+    "db:import-buet-teachers": "node scripts/import-buet-teachers.js",
     "db:init": "node db/init.js",
     "dev": "nodemon src/server.js"
   },
@@ -19,6 +22,7 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cheerio": "^1.2.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

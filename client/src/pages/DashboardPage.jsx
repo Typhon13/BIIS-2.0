@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import AdminDepartmentManagement from '../components/admin/AdminDepartmentManagement'
+import AdminTeacherManagement from '../components/admin/AdminTeacherManagement'
+import AdminStudentManagement from '../components/admin/AdminStudentManagement'
 import AdminUserManagement from '../components/admin/AdminUserManagement'
 import DashboardLayout from '../components/DashboardLayout'
 import { useAuth } from '../context/AuthContext'
@@ -419,6 +421,14 @@ function DashboardPage() {
 
     if (activeItem === 'Departments' && user.role === 'ADMIN') {
       return <AdminDepartmentManagement />
+    }
+
+    if (activeItem === 'Teachers' && user.role === 'ADMIN') {
+      return <AdminTeacherManagement />
+    }
+
+    if (activeItem === 'Students' && user.role === 'ADMIN') {
+      return <AdminStudentManagement />
     }
 
     return (
