@@ -6,6 +6,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import UnauthorizedPage from './pages/UnauthorizedPage'
 
 import './App.css'
 
@@ -23,14 +24,11 @@ function App() {
         element={<ResetPasswordPage />}
       />
 
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/dashboard/admin" element={<ProtectedRoute allowedRole="ADMIN"><DashboardPage /></ProtectedRoute>} />
+      <Route path="/dashboard/teacher" element={<ProtectedRoute allowedRole="TEACHER"><DashboardPage /></ProtectedRoute>} />
+      <Route path="/dashboard/student" element={<ProtectedRoute allowedRole="STUDENT"><DashboardPage /></ProtectedRoute>} />
 
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -8,34 +8,27 @@ function DashboardLayout({
   onToggleGroup,
   onSelect,
   onLogout,
+  isSidebarOpen,
+  onToggleSidebar,
   children,
 }) {
   return (
     <div className="biis-portal-page">
       <main className="biis-portal-shell">
         <header className="biis-portal-banner">
-          <img src={buetLogo} alt="BUET logo" />
-
-          <div>
-            <h1>বাংলাদেশ প্রকৌশল বিশ্ববিদ্যালয়</h1>
-            <p>
-              BUET INSTITUTIONAL INFORMATION SYSTEM
-              <strong> 2.0</strong>
-            </p>
+          <img src={buetLogo} alt="Institutional crest" />
+          <div className="institution-copy">
+            <span className="eyebrow">BIIS 2.0</span>
+            <h1>Institutional Information System</h1>
+            <p>Bangladesh University of Engineering and Technology</p>
           </div>
-
-          <div className="campus-fade" aria-hidden="true" />
+          <div className="header-account">
+            <span className="header-account-name">{user.username}</span>
+            <span className="role-badge">{user.role}</span>
+          </div>
         </header>
 
         <nav className="biis-portal-navbar">
-          <a
-            href="https://www.buet.ac.bd/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            BUET Home
-          </a>
-
           <button type="button" onClick={() => onSelect('Overview')}>
             Home
           </button>
@@ -47,21 +40,17 @@ function DashboardLayout({
             My Profile
           </button>
 
-          <button type="button" onClick={() => onSelect('Notices')}>
-            Notices
+          <button type="button" onClick={onToggleSidebar} className="mobile-menu-button" aria-expanded={isSidebarOpen}>
+            Menu
           </button>
 
-          <span className="portal-user">
-            {user.username} ({user.role})
-          </span>
-
-          <button type="button" onClick={onLogout}>
+          <button type="button" onClick={onLogout} className="topbar-logout">
             Logout
           </button>
         </nav>
 
         <div className="biis-portal-layout">
-          <aside className="biis-portal-sidebar">
+          <aside className={`biis-portal-sidebar ${isSidebarOpen ? 'is-open' : ''}`}>
             {groups.map((group) => {
               const isExpanded = expandedGroup === group.title
 
@@ -97,15 +86,7 @@ function DashboardLayout({
               )
             })}
 
-            <a
-              className="portal-webmail"
-              href="https://mail.google.com/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span>📧</span>
-              BUET WebMail
-            </a>
+            <div className="sidebar-caption">Role workspace<br /><strong>{user.role}</strong></div>
           </aside>
 
           <section className="biis-portal-content">

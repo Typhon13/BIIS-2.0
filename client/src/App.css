@@ -1685,3 +1685,329 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Academic workspaces */
+
+.academic-panel {
+  margin-bottom: 20px;
+  border: 1px solid #999;
+  background: #fff;
+}
+
+.academic-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #444440;
+  color: #fff;
+}
+
+.academic-panel-heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.academic-panel-heading button,
+.academic-panel button,
+.academic-panel select,
+.academic-panel input {
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #777;
+  border-radius: 2px;
+  background: #fff;
+  color: #111;
+}
+
+.academic-panel button {
+  border-color: #70160e;
+  background: #8d1b0f;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.academic-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.academic-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 18px;
+  background: #f0eee9;
+}
+
+.academic-form label,
+.wide-field {
+  display: grid;
+  gap: 5px;
+  color: #333;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.academic-form button {
+  align-self: end;
+}
+
+.academic-table-wrap {
+  overflow-x: auto;
+}
+
+.academic-panel table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.academic-panel th,
+.academic-panel td {
+  padding: 10px 12px;
+  border: 1px solid #c4c1ba;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.academic-panel th {
+  background: #e2dfd8;
+  color: #2c2c2c;
+}
+
+.academic-panel td small,
+.academic-panel td strong {
+  display: block;
+}
+
+.academic-panel td small {
+  margin-top: 3px;
+  color: #666;
+}
+
+.academic-panel tbody tr:nth-child(even) {
+  background: #faf9f6;
+}
+
+.academic-notice {
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border: 1px solid;
+  font-weight: bold;
+}
+
+.academic-error {
+  border-color: #a32318;
+  background: #fae9e7;
+  color: #8b160d;
+}
+
+.academic-success {
+  border-color: #267141;
+  background: #e6f4ea;
+  color: #155d2f;
+}
+
+.academic-empty,
+.academic-loading {
+  margin: 0;
+  padding: 22px 18px;
+  color: #555;
+}
+
+.academic-columns {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(420px, 1.6fr);
+  gap: 20px;
+  padding: 18px;
+}
+
+.academic-columns h3 {
+  margin: 0 0 10px;
+  color: #8d1b0f;
+}
+
+.academic-list {
+  margin: 0 0 18px;
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.compact-form {
+  grid-template-columns: 1fr;
+  padding: 0;
+  background: transparent;
+}
+
+.wide-field {
+  margin: 18px;
+}
+
+.status-text {
+  font-weight: bold;
+}
+
+.status-page {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: #2a0905;
+  background: #f1eee8;
+  text-align: center;
+}
+
+.status-page h1,
+.status-page p {
+  margin: 0;
+}
+
+.status-page a {
+  color: #8d1b0f;
+  font-weight: bold;
+}
+
+.overview-copy {
+  margin: 0;
+  padding: 22px;
+}
+
+@media (max-width: 900px) {
+  .academic-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .academic-form {
+    grid-template-columns: 1fr;
+  }
+
+  .academic-panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .academic-panel-heading button {
+    width: 100%;
+  }
+
+  .biis-portal-content {
+    padding: 16px 10px;
+  }
+}
+
+/* BIIS application shell refinement */
+:root {
+  --biis-maroon: #8b1e13;
+  --biis-maroon-dark: #68160f;
+  --biis-ink: #323432;
+  --biis-black: #111111;
+  --biis-paper: #f3f1ec;
+  --biis-card: #ffffff;
+  --biis-border: #d6d1c8;
+  --biis-muted: #6d6b67;
+  --biis-space: 20px;
+  --biis-radius: 8px;
+  --biis-shadow: 0 8px 22px rgb(48 40 31 / 8%);
+}
+
+body {
+  color: var(--biis-ink);
+  background: var(--biis-paper);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button, input, select { font: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid rgb(139 30 19 / 30%); outline-offset: 2px; }
+
+.biis-portal-page { width: min(1440px, calc(100% - 32px)); margin: 22px auto; }
+.biis-portal-shell { overflow: visible; min-height: calc(100vh - 80px); border: 1px solid var(--biis-border); border-radius: 10px; box-shadow: var(--biis-shadow); background: var(--biis-card); }
+.biis-portal-banner { min-height: 132px; display: flex; align-items: center; gap: 18px; padding: 22px 30px; border-radius: 10px 10px 0 0; background: linear-gradient(110deg, #fff 0%, #faf9f5 60%, #e8e2d7 100%); }
+.biis-portal-banner img { width: 78px; height: 78px; flex: 0 0 auto; object-fit: contain; }
+.institution-copy { min-width: 0; }
+.institution-copy .eyebrow { display: block; margin-bottom: 6px; color: var(--biis-maroon); font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.institution-copy h1 { margin: 0; color: var(--biis-ink); font-size: clamp(24px, 3vw, 42px); line-height: 1.08; }
+.institution-copy p { margin: 7px 0 0; color: var(--biis-muted); font-size: 15px; }
+.header-account { display: grid; gap: 8px; justify-items: end; margin-left: auto; }
+.header-account-name { color: var(--biis-ink); font-size: 14px; font-weight: 700; }
+.role-badge { padding: 5px 10px; border-radius: 999px; color: #fff; background: var(--biis-maroon); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.biis-portal-navbar { min-height: 52px; display: flex; align-items: center; gap: 4px; padding: 0 18px; background: var(--biis-black); }
+.biis-portal-navbar button { min-height: 36px; padding: 8px 14px; border: 0; border-radius: 5px; color: #f4f4f4; background: transparent; cursor: pointer; font-size: 14px; }
+.biis-portal-navbar button:hover, .biis-portal-navbar button:focus-visible { background: #2d2d2d; }
+.topbar-logout { margin-left: auto; color: #fff !important; background: var(--biis-maroon) !important; }
+.mobile-menu-button { display: none; }
+.biis-portal-layout { min-height: 640px; display: grid; grid-template-columns: 264px minmax(0, 1fr); }
+.biis-portal-sidebar { padding: 14px 12px; background: var(--biis-maroon-dark); }
+.portal-menu-group { margin-bottom: 8px; }
+.portal-group-button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 12px 12px; border: 0; border-radius: 6px; color: #fff; background: transparent; cursor: pointer; text-align: left; font-size: 12px; font-weight: 800; letter-spacing: .09em; }
+.portal-group-button:hover, .portal-group-button:focus-visible { background: rgb(255 255 255 / 11%); }
+.portal-submenu { display: grid; gap: 3px; padding: 4px 0 8px; }
+.portal-submenu button { width: 100%; padding: 10px 12px 10px 28px; border: 0; border-left: 3px solid transparent; border-radius: 0 5px 5px 0; color: #f8ebe7; background: transparent; cursor: pointer; text-align: left; font-size: 14px; }
+.portal-submenu button:hover, .portal-submenu button.active { border-left-color: #f4c7a9; color: #fff; background: rgb(255 255 255 / 15%); }
+.portal-submenu button.active { font-weight: 800; }
+.sidebar-caption { margin: 24px 8px 0; padding: 14px 10px; border-top: 1px solid rgb(255 255 255 / 18%); color: #e7c9c2; font-size: 12px; line-height: 1.5; }
+.sidebar-caption strong { color: #fff; }
+.biis-portal-content { min-width: 0; padding: 30px 34px 42px; background: var(--biis-paper); }
+.module-view { min-width: 0; }
+.portal-profile-summary { justify-content: flex-start; padding: 0 0 22px; }
+.portal-avatar { width: 68px; height: 68px; border: 0; border-radius: 50%; background: var(--biis-maroon); font-size: 28px; }
+.portal-profile-summary h2 { margin-bottom: 4px; font-size: 26px; }
+.portal-profile-summary p { color: var(--biis-muted); }
+.portal-status-grid { gap: 12px; margin: 0 0 20px; border: 0; background: transparent; }
+.portal-status-grid article { min-height: 96px; display: flex; align-items: flex-start; gap: 8px; padding: 16px; border: 1px solid var(--biis-border); border-radius: var(--biis-radius); background: var(--biis-card); text-align: left; box-shadow: 0 2px 8px rgb(48 40 31 / 4%); }
+.portal-status-grid span { color: var(--biis-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.portal-status-grid strong { margin-top: 22px; margin-left: -112px; font-size: 18px; }
+.portal-status-grid .status-active { width: auto; margin: 22px 0 0 -112px; padding: 0; color: #246b40; background: transparent; }
+.portal-information-panel { margin-top: 0; border: 1px solid var(--biis-border); border-radius: var(--biis-radius); background: var(--biis-card); box-shadow: var(--biis-shadow); }
+.portal-information-panel h2 { padding: 16px 18px; color: var(--biis-ink); background: transparent; border-bottom: 1px solid var(--biis-border); font-size: 18px; }
+.overview-copy { margin: 0; padding: 18px; color: var(--biis-muted); line-height: 1.6; }
+.academic-panel { margin-bottom: 18px; border: 1px solid var(--biis-border); border-radius: var(--biis-radius); box-shadow: 0 3px 12px rgb(48 40 31 / 5%); }
+.academic-panel-heading { min-height: 58px; padding: 14px 18px; background: var(--biis-card); border-bottom: 1px solid var(--biis-border); color: var(--biis-ink); }
+.academic-panel-heading h2 { font-size: 19px; }
+.academic-panel-heading button, .academic-panel button { min-height: 36px; border-radius: 5px; background: var(--biis-maroon); }
+.academic-form { background: #faf9f6; border-bottom: 1px solid var(--biis-border); }
+.academic-form label, .wide-field { color: var(--biis-ink); font-size: 13px; }
+.academic-form input, .academic-form select, .academic-panel input, .academic-panel select { border-color: var(--biis-border); border-radius: 5px; }
+.academic-empty { color: var(--biis-muted); }
+.academic-panel th { background: #ece8df; color: var(--biis-ink); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+.academic-panel td { border-color: var(--biis-border); }
+.academic-panel tbody tr:nth-child(even) { background: #fcfbf9; }
+.profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; padding: 8px 18px 18px; }
+.profile-grid div { display: grid; gap: 6px; padding: 14px 0; border-bottom: 1px solid var(--biis-border); }
+.profile-grid strong { color: var(--biis-muted); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; }
+.profile-grid span { overflow-wrap: anywhere; font-size: 15px; }
+.status-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 18px; }
+.status-summary span { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--biis-border); border-radius: 6px; color: var(--biis-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.status-summary strong { color: var(--biis-ink); font-size: 15px; text-transform: none; }
+.module-overview .academic-panel:nth-of-type(n+3), .module-my-information .academic-panel:nth-of-type(n+2), .module-academic-calendar .academic-panel:not(:nth-of-type(3)), .module-add-or-drop-courses .academic-panel:not(:nth-of-type(4)), .module-registration-and-enrolled-courses .academic-panel:not(:nth-of-type(5)), .module-view-grades .academic-panel:not(:nth-of-type(6)) { display: none; }
+.footer { margin-top: 14px; border-radius: 6px; background: var(--biis-black); color: #d9d9d9; }
+
+@media (max-width: 850px) {
+  .biis-portal-page { width: 100%; margin: 0; }
+  .biis-portal-shell { border-radius: 0; }
+  .biis-portal-banner { min-height: 104px; padding: 16px; }
+  .biis-portal-banner img { width: 58px; height: 58px; }
+  .institution-copy h1 { font-size: 22px; }
+  .institution-copy p { font-size: 12px; }
+  .header-account { display: none; }
+  .mobile-menu-button { display: block; }
+  .biis-portal-layout { display: block; position: relative; }
+  .biis-portal-sidebar { position: absolute; z-index: 10; top: 0; bottom: 0; left: 0; width: min(280px, 86vw); transform: translateX(-102%); transition: transform .2s ease; box-shadow: 8px 0 20px rgb(0 0 0 / 18%); }
+  .biis-portal-sidebar.is-open { transform: translateX(0); }
+  .biis-portal-content { padding: 22px 14px 34px; }
+  .profile-grid, .status-summary { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .biis-portal-navbar { padding: 0 8px; }
+  .biis-portal-navbar button { padding: 8px 9px; font-size: 12px; }
+  .topbar-logout { margin-left: auto; }
+  .portal-status-grid { grid-template-columns: 1fr; }
+  .portal-status-grid article { min-height: 78px; }
+}

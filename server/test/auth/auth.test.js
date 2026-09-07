@@ -82,17 +82,21 @@ test('registration validates input, rejects authorization fields, assigns STUDEN
     [user.userId]
   );
   const sessions = await db.query('SELECT COUNT(*)::int AS count FROM auth_sessions WHERE user_id = $1', [user.userId]);
+  const profile = await db.query('SELECT student_id, student_id_number FROM students WHERE user_id = $1', [user.userId]);
   assert.equal(role.rows[0].role_name, 'STUDENT');
   assert.ok(role.rows[0].password_hash);
   assert.equal(JSON.stringify(user).includes('password_hash'), false);
   assert.equal(JSON.stringify(user).includes(password), false);
   assert.equal(sessions.rows[0].count, 0);
+  assert.equal(profile.rows.length, 1);
+  assert.match(profile.rows[0].student_id_number, /^STU-\d+$/);
 
   const invalidCases = [
     [{ email: 'invalid', password, confirmPassword: password }, 'email'],
     [{ email: `${user.username}-weak@example.com`, password: 'weak', confirmPassword: 'weak' }, 'weak password'],
     [{ email: `${user.username}-mismatch@example.com`, password, confirmPassword: 'Different123' }, 'confirmation'],
     [{ email: `${user.username}-role@example.com`, password, confirmPassword: password, role: 'ADMIN', role_id: 1, is_admin: true, user_id: 1 }, 'role'],
+    [{ email: `${user.username}-teacher@example.com`, password, confirmPassword: password, role: 'TEACHER' }, 'teacher role'],
   ];
   for (const [fields, label] of invalidCases) {
     const response = await request(app).post('/api/auth/register').send({ username: `invalid_${label}_${Date.now()}`, ...fields });
@@ -124,7 +128,7 @@ test('wrong password, unknown user, and inactive account return the same generic
   const beforeCount = (await db.query('SELECT COUNT(*)::int AS count FROM auth_sessions WHERE user_id = $1', [testUser.userId])).rows[0].count;
   const wrong = await login(testUser.username, 401, 'Wrong-Password-123!');
   const unknown = await login(`unknown_${Date.now()}@example.com`, 401);
-  await db.query("UPDATE users SET account_status = 'DISABLED' WHERE user_id = $1", [testUser.userId]);
+  await db.query("UPDATE users SET account_status = 'SUSPENDED' WHERE user_id = $1", [testUser.userId]);
   const inactive = await login(testUser.username, 401);
   await db.query("UPDATE users SET account_status = 'ACTIVE' WHERE user_id = $1", [testUser.userId]);
   assert.equal(wrong.body.message, unknown.body.message);
@@ -159,6 +163,7 @@ test('refresh rotates the session and normal logout revokes the rotated session'
   const cookieA = cookiePair(loginResponse);
   const original = (await db.query('SELECT * FROM auth_sessions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1', [testUser.userId])).rows[0];
   const refreshed = await request(app).post('/api/auth/refresh').set('Cookie', cookieA);
+  const oldAccessToken = refreshed.body.data.accessToken;
   const cookieB = cookiePair(refreshed);
   const replacement = (await db.query('SELECT * FROM auth_sessions WHERE user_id = $1 AND session_id <> $2 ORDER BY created_at DESC LIMIT 1', [testUser.userId, original.session_id])).rows[0];
   assert.equal(refreshed.status, 200);
@@ -173,6 +178,7 @@ test('refresh rotates the session and normal logout revokes the rotated session'
   const logout = await request(app).post('/api/auth/logout').set('Cookie', cookieB);
   assert.equal(logout.status, 200);
   assert.ok(hasClearingCookie(logout));
+  assert.equal((await request(app).get('/api/auth/me').set('Authorization', `Bearer ${oldAccessToken}`)).status, 401);
   assert.ok((await db.query('SELECT revoked_at FROM auth_sessions WHERE session_id = $1', [replacement.session_id])).rows[0].revoked_at);
   assert.equal((await request(app).post('/api/auth/refresh').set('Cookie', cookieB)).status, 401);
   assert.equal((await request(app).post('/api/auth/logout').set('Cookie', cookieB)).status, 200);

@@ -1,38 +1,26 @@
-/**
- * Authentication Controller
- * Handles HTTP requests and responses for authentication endpoints
- */
+const authService = require(
+  '../services/auth.service'
+);
+const authConfig = require(
+  '../config/auth.config'
+);
 
-const authService = require('../services/auth.service');
-const authConfig = require('../config/auth.config');
-
-/**
- * POST /api/auth/register
- * Public endpoint for student registration
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
 async function register(req, res) {
   try {
-    const { username, email, password } = req.body;
-
-    // Call auth service to register student
-    const newUser = await authService.registerStudent({
-      username,
-      email,
-      password,
+    const user = await authService.registerStudent({
+      username: req.body.username,
+      email: req.body.email,
+      password: req.body.password,
     });
 
-    // Return 201 Created with registered user data
     return res.status(201).json({
       success: true,
       message: 'Registration successful',
       data: {
-        user: newUser,
+        user,
       },
     });
   } catch (error) {
-    // Handle specific error types
     if (error.message === 'USERNAME_TAKEN') {
       return res.status(409).json({
         success: false,
@@ -43,50 +31,51 @@ async function register(req, res) {
     if (error.message === 'EMAIL_TAKEN') {
       return res.status(409).json({
         success: false,
-        message: 'Email already registered',
+        message: 'Email is already registered',
       });
     }
 
     if (error.message === 'DUPLICATE_USER') {
       return res.status(409).json({
         success: false,
-        message: 'Username or email already exists',
+        message:
+          'Username or email already exists',
       });
     }
 
-    if (error.message === 'STUDENT_ROLE_NOT_FOUND') {
-      console.error('Critical: STUDENT role not found in database');
+    if (
+      error.message === 'STUDENT_ROLE_NOT_FOUND'
+    ) {
+      console.error(
+        'The STUDENT role is missing from the database'
+      );
+
       return res.status(500).json({
         success: false,
-        message:
-          'Server configuration error. Please contact administrator.',
+        message: 'Server configuration error',
       });
     }
 
-    // Generic error handling
-    console.error('Registration error:', error.message.split('\n')[0]);
+    console.error(
+      'Registration error:',
+      error.message
+    );
+
     return res.status(500).json({
       success: false,
-      message: 'Registration failed. Please try again.',
+      message: 'Registration failed',
     });
   }
 }
 
-/**
- * POST /api/auth/login
- * Public endpoint for user login
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
 async function login(req, res) {
   try {
-    const { identifier, password } = req.body;
-
     const result = await authService.loginUser({
-      identifier,
-      password,
+      identifier: req.body.identifier,
+      password: req.body.password,
       ipAddress: req.ip,
-      userAgent: req.get('user-agent') || 'unknown',
+      userAgent:
+        req.get('user-agent') || 'unknown',
     });
 
     res.cookie(
@@ -104,44 +93,38 @@ async function login(req, res) {
       },
     });
   } catch (error) {
-    if (error.message === 'INVALID_CREDENTIALS') {
+    if (
+      error.message === 'INVALID_CREDENTIALS'
+    ) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials or account unavailable',
+        message:
+          'Invalid credentials or account unavailable',
       });
     }
 
-    console.error('Login error:', error.message.split('\n')[0]);
+    console.error('Login error:', error.message);
+
     return res.status(500).json({
       success: false,
-      message: 'Login failed. Please try again.',
+      message: 'Login failed',
     });
   }
 }
 
-/**
- * GET /api/auth/me
- * Returns the authenticated current user without exposing sensitive data
- */
-async function getCurrentUser(req, res) {
-  return res.status(200).json({
-    success: true,
-    data: {
-      user: req.user,
-    },
-  });
-}
-
-/**
- * POST /api/auth/refresh
- * Rotates the refresh token and issues a new access token
- */
 async function refresh(req, res) {
-  const refreshToken = req.cookies[authConfig.cookies.refreshTokenName];
-  const cookieName = authConfig.cookies.refreshTokenName;
+  const cookieName =
+    authConfig.cookies.refreshTokenName;
+
+  const refreshToken =
+    req.cookies[cookieName];
 
   if (!refreshToken) {
-    res.clearCookie(cookieName, authConfig.getClearRefreshCookieOptions());
+    res.clearCookie(
+      cookieName,
+      authConfig.getClearRefreshCookieOptions()
+    );
+
     return res.status(401).json({
       success: false,
       message: 'Unauthorized',
@@ -149,11 +132,13 @@ async function refresh(req, res) {
   }
 
   try {
-    const result = await authService.refreshSession({
-      refreshToken,
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent') || 'unknown',
-    });
+    const result =
+      await authService.refreshSession({
+        refreshToken,
+        ipAddress: req.ip,
+        userAgent:
+          req.get('user-agent') || 'unknown',
+      });
 
     res.cookie(
       cookieName,
@@ -169,8 +154,12 @@ async function refresh(req, res) {
         user: result.user,
       },
     });
-  } catch (error) {
-    res.clearCookie(cookieName, authConfig.getClearRefreshCookieOptions());
+  } catch {
+    res.clearCookie(
+      cookieName,
+      authConfig.getClearRefreshCookieOptions()
+    );
+
     return res.status(401).json({
       success: false,
       message: 'Unauthorized',
@@ -178,23 +167,30 @@ async function refresh(req, res) {
   }
 }
 
-/**
- * POST /api/auth/logout
- * Revokes the current refresh session and clears the cookie
- */
 async function logout(req, res) {
-  const refreshToken = req.cookies[authConfig.cookies.refreshTokenName];
-  const cookieName = authConfig.cookies.refreshTokenName;
+  const cookieName =
+    authConfig.cookies.refreshTokenName;
+
+  const refreshToken =
+    req.cookies[cookieName];
 
   if (refreshToken) {
     try {
-      await authService.logoutUser({ refreshToken });
+      await authService.logoutUser({
+        refreshToken,
+      });
     } catch (error) {
-      // Intentionally generic; logout remains idempotent
+      console.error(
+        'Logout session revocation failed:',
+        error.message
+      );
     }
   }
 
-  res.clearCookie(cookieName, authConfig.getClearRefreshCookieOptions());
+  res.clearCookie(
+    cookieName,
+    authConfig.getClearRefreshCookieOptions()
+  );
 
   return res.status(200).json({
     success: true,
@@ -202,10 +198,58 @@ async function logout(req, res) {
   });
 }
 
+async function getCurrentUser(req, res) {
+  return res.status(200).json({
+    success: true,
+    data: {
+      user: req.user,
+    },
+  });
+}
+
+async function changePassword(req, res) {
+  try {
+    await authService.changePassword({
+      userId: req.user.userId,
+      currentPassword:
+        req.body.currentPassword,
+      newPassword: req.body.newPassword,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message:
+        'Password changed. Please log in again.',
+    });
+  } catch (error) {
+    if (
+      error.message ===
+      'INVALID_CURRENT_PASSWORD'
+    ) {
+      return res.status(401).json({
+        success: false,
+        message:
+          'Current password is incorrect',
+      });
+    }
+
+    console.error(
+      'Password change error:',
+      error.message
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: 'Password change failed',
+    });
+  }
+}
+
 module.exports = {
   register,
   login,
-  getCurrentUser,
   refresh,
   logout,
+  getCurrentUser,
+  changePassword,
 };

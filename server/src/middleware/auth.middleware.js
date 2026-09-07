@@ -1,80 +1,88 @@
-/**
- * Authentication Middleware
- * Verifies bearer access tokens and loads the current user from the database
- */
-
-const userRepository = require('../repositories/user.repository');
+const sessionRepository = require(
+  '../repositories/session.repository'
+);
 const tokenUtils = require('../utils/token.utils');
+
+function unauthorized(res) {
+  return res.status(401).json({
+    success: false,
+    message: 'Unauthorized',
+  });
+}
 
 async function authenticate(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
+    const authorization = req.headers.authorization;
+
+    if (!authorization) {
+      return unauthorized(res);
     }
 
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
+    const parts = authorization.split(' ');
+
+    if (
+      parts.length !== 2 ||
+      parts[0] !== 'Bearer' ||
+      !parts[1]
+    ) {
+      return unauthorized(res);
     }
 
-    const token = parts[1];
     let decoded;
 
     try {
-      decoded = tokenUtils.verifyAccessToken(token);
-    } catch (error) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
+      decoded = tokenUtils.verifyAccessToken(parts[1]);
+    } catch {
+      return unauthorized(res);
     }
 
-    if (!decoded || !decoded.sub) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
+    if (!decoded.sub || !decoded.sid) {
+      return unauthorized(res);
     }
 
-    const user = await userRepository.findUserById(decoded.sub);
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
+    const session =
+      await sessionRepository.findActiveSessionById(
+        decoded.sid
+      );
+
+    if (!session) {
+      return unauthorized(res);
     }
 
-    if (user.account_status !== 'ACTIVE') {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
+    if (
+      String(session.user_id) !== String(decoded.sub)
+    ) {
+      return unauthorized(res);
     }
 
-    if (!user.role_name) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized',
-      });
+    const sessionExpired =
+      new Date(session.expires_at).getTime() <= Date.now();
+
+    if (
+      sessionExpired ||
+      session.account_status !== 'ACTIVE' ||
+      !session.role_name
+    ) {
+      return unauthorized(res);
     }
+
+    req.authSessionId = session.session_id;
 
     req.user = {
-      userId: String(user.user_id),
-      username: user.username,
-      email: user.email,
-      accountStatus: user.account_status,
-      role: user.role_name,
+      userId: String(session.user_id),
+      username: session.username,
+      email: session.email,
+      accountStatus: session.account_status,
+      role: session.role_name,
     };
 
     return next();
   } catch (error) {
+    console.error(
+      'Authentication middleware error:',
+      error.message
+    );
+
     return res.status(500).json({
       success: false,
       message: 'Internal server error',

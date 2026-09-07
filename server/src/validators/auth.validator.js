@@ -1,130 +1,228 @@
-/**
- * Authentication Input Validators
- * Uses express-validator for input validation and sanitization
- */
+const {
+  body,
+  validationResult,
+} = require('express-validator');
 
-const { body, validationResult, check } = require('express-validator');
+const allowedRegistrationFields = [
+  'username',
+  'email',
+  'password',
+  'confirmPassword',
+];
 
-const rejectedAuthorizationFields = [
+const forbiddenAuthenticationFields = [
   'role',
   'role_id',
   'roleName',
+  'isAdmin',
   'is_admin',
-  'user_id',
   'userId',
+  'user_id',
 ];
 
-/**
- * Validator rules for student registration
- * Enforces username format, email format, password strength, role restrictions
- */
-const registrationValidationRules = () => {
+function rejectUnknownRegistrationFields() {
+  return body().custom((requestBody) => {
+    const fields = Object.keys(requestBody || {});
+
+    const unexpectedField = fields.find(
+      (field) =>
+        !allowedRegistrationFields.includes(field)
+    );
+
+    if (unexpectedField) {
+      throw new Error(
+        `${unexpectedField} cannot be specified during registration`
+      );
+    }
+
+    return true;
+  });
+}
+
+function rejectForbiddenFields(action) {
+  return forbiddenAuthenticationFields.map((field) =>
+    body(field).custom((value) => {
+      if (value !== undefined) {
+        throw new Error(
+          `${field} cannot be specified during ${action}`
+        );
+      }
+
+      return true;
+    })
+  );
+}
+
+function registrationValidationRules() {
   return [
-    // Username validation
+    rejectUnknownRegistrationFields(),
+
     body('username')
       .trim()
       .notEmpty()
       .withMessage('Username is required')
       .isLength({ min: 3, max: 80 })
-      .withMessage('Username must be between 3 and 80 characters')
+      .withMessage(
+        'Username must be between 3 and 80 characters'
+      )
       .matches(/^[a-zA-Z0-9_.-]+$/)
       .withMessage(
-        'Username can only contain letters, numbers, underscores, dots, and hyphens'
+        'Username may contain letters, numbers, underscores, dots and hyphens only'
       ),
 
-    // Email validation
     body('email')
+      .trim()
       .notEmpty()
       .withMessage('Email is required')
       .isEmail()
-      .withMessage('Email must be valid')
+      .withMessage('Enter a valid email address')
       .normalizeEmail(),
 
-    // Password validation
     body('password')
+      .isString()
+      .withMessage('Password is required')
       .notEmpty()
       .withMessage('Password is required')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters')
+      .isLength({ min: 8, max: 128 })
+      .withMessage(
+        'Password must contain between 8 and 128 characters'
+      )
       .matches(/[a-z]/)
-      .withMessage('Password must contain at least one lowercase letter')
+      .withMessage(
+        'Password must contain a lowercase letter'
+      )
       .matches(/[A-Z]/)
-      .withMessage('Password must contain at least one uppercase letter')
-      .matches(/\d/)
-      .withMessage('Password must contain at least one number'),
+      .withMessage(
+        'Password must contain an uppercase letter'
+      )
+      .matches(/[0-9]/)
+      .withMessage(
+        'Password must contain a number'
+      ),
 
-    // Confirm password validation
     body('confirmPassword')
-      .notEmpty()
+      .isString()
       .withMessage('Password confirmation is required')
       .custom((value, { req }) => {
         if (value !== req.body.password) {
           throw new Error('Passwords do not match');
         }
+
         return true;
       }),
 
-    ...rejectedAuthorizationFields.map((field) =>
-      check(field).custom((value) => {
-        if (value !== undefined) {
-          throw new Error(`${field} cannot be specified during registration`);
-        }
-        return true;
-      })
-    ),
+    ...rejectForbiddenFields('registration'),
   ];
-};
+}
 
-/**
- * Validator rules for user login
- * Requires an identifier and password, and rejects authorization injection fields
- */
-const loginValidationRules = () => {
+function loginValidationRules() {
   return [
     body('identifier')
       .trim()
       .notEmpty()
-      .withMessage('Identifier is required')
-      .isLength({ min: 1, max: 255 })
-      .withMessage('Identifier must be less than 255 characters'),
+      .withMessage(
+        'Username or email is required'
+      )
+      .isLength({ max: 255 })
+      .withMessage(
+        'Username or email is too long'
+      ),
 
+    // Do not trim passwords because spaces may be intentional.
     body('password')
-      .trim()
+      .isString()
+      .withMessage('Password is required')
       .notEmpty()
-      .withMessage('Password is required'),
+      .withMessage('Password is required')
+      .isLength({ max: 128 })
+      .withMessage('Password is too long'),
 
-    ...rejectedAuthorizationFields.map((field) =>
-      check(field).custom((value) => {
-        if (value !== undefined) {
-          throw new Error(`${field} cannot be specified during login`);
+    ...rejectForbiddenFields('login'),
+  ];
+}
+
+function passwordChangeValidationRules() {
+  const allowedFields = [
+    'currentPassword',
+    'newPassword',
+    'confirmPassword',
+  ];
+
+  return [
+    body().custom((requestBody) => {
+      const unexpectedField = Object.keys(
+        requestBody || {}
+      ).find(
+        (field) => !allowedFields.includes(field)
+      );
+
+      if (unexpectedField) {
+        throw new Error(
+          `${unexpectedField} cannot be specified`
+        );
+      }
+
+      return true;
+    }),
+
+    body('currentPassword')
+      .isString()
+      .withMessage('Current password is required')
+      .notEmpty()
+      .withMessage('Current password is required'),
+
+    body('newPassword')
+      .isString()
+      .withMessage('New password is required')
+      .isLength({ min: 8, max: 128 })
+      .withMessage(
+        'New password must contain between 8 and 128 characters'
+      )
+      .matches(/[a-z]/)
+      .withMessage(
+        'New password must contain a lowercase letter'
+      )
+      .matches(/[A-Z]/)
+      .withMessage(
+        'New password must contain an uppercase letter'
+      )
+      .matches(/[0-9]/)
+      .withMessage(
+        'New password must contain a number'
+      ),
+
+    body('confirmPassword').custom(
+      (value, { req }) => {
+        if (value !== req.body.newPassword) {
+          throw new Error('Passwords do not match');
         }
+
         return true;
-      })
+      }
     ),
   ];
-};
+}
 
-/**
- * Middleware to handle validation errors
- * Collects validation errors and returns 400 response
- */
-const handleValidationErrors = (req, res, next) => {
+function handleValidationErrors(req, res, next) {
   const errors = validationResult(req);
+
   if (!errors.isEmpty()) {
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
-      errors: errors.array().map((err) => ({
-        field: err.param,
-        message: err.msg,
+      errors: errors.array().map((error) => ({
+        field: error.path || 'request',
+        message: error.msg,
       })),
     });
   }
-  next();
-};
+
+  return next();
+}
 
 module.exports = {
   registrationValidationRules,
   loginValidationRules,
+  passwordChangeValidationRules,
   handleValidationErrors,
 };

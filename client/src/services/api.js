@@ -2,14 +2,38 @@ const API_BASE_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export async function apiRequest(path, options = {}) {
+  const { accessToken, retry = true, onUnauthorized, ...requestOptions } = options
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+    ...requestOptions,
     credentials: 'include',
     headers: {
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...options.headers,
+      ...(requestOptions.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...requestOptions.headers,
     },
   })
+
+  if (response.status === 401 && accessToken && retry && !path.startsWith('/auth/')) {
+    try {
+      const refreshed = await apiRequest('/auth/refresh', {
+        method: 'POST',
+        retry: false,
+      })
+      window.dispatchEvent(new CustomEvent('biis-auth-refreshed', {
+        detail: refreshed.data,
+      }))
+      onUnauthorized?.(refreshed.data.accessToken, refreshed.data.user)
+      return apiRequest(path, {
+        ...requestOptions,
+        accessToken: refreshed.data.accessToken,
+        retry: false,
+        onUnauthorized,
+      })
+    } catch {
+      onUnauthorized?.(null, null)
+      window.dispatchEvent(new Event('biis-auth-expired'))
+    }
+  }
 
   const data = await response.json().catch(() => ({
     success: false,
@@ -62,11 +86,7 @@ export const authApi = {
   },
 
   getMe(accessToken) {
-    return apiRequest('/auth/me', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    })
+    return apiRequest('/auth/me', { accessToken })
   },
 
   logout() {
@@ -74,12 +94,17 @@ export const authApi = {
       method: 'POST',
     })
   },
+  changePassword(details, accessToken) {
+    return apiRequest('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(details),
+      accessToken,
+    })
+  },
 }
 
-function authorizationHeaders(accessToken) {
-  return {
-    Authorization: `Bearer ${accessToken}`,
-  }
+function authorized(path, accessToken, options = {}) {
+  return apiRequest(path, { ...options, accessToken })
 }
 
 export const adminApi = {
@@ -101,33 +126,26 @@ export const adminApi = {
       parameters.set('status', filters.status)
     }
 
-    return apiRequest(`/admin/users?${parameters.toString()}`, {
-      headers: authorizationHeaders(accessToken),
-    })
+    return authorized(`/admin/users?${parameters.toString()}`, accessToken)
   },
 
   getUser(accessToken, userId) {
-    return apiRequest(`/admin/users/${userId}`, {
-      headers: authorizationHeaders(accessToken),
-    })
+    return authorized(`/admin/users/${userId}`, accessToken)
   },
 
   updateStatus(accessToken, userId, status) {
-    return apiRequest(`/admin/users/${userId}/status`, {
+    return authorized(`/admin/users/${userId}/status`, accessToken, {
       method: 'PATCH',
-      headers: authorizationHeaders(accessToken),
       body: JSON.stringify({ status }),
     })
   },
 
   updateRole(accessToken, userId, role) {
-    return apiRequest(`/admin/users/${userId}/role`, {
+    return authorized(`/admin/users/${userId}/role`, accessToken, {
       method: 'PATCH',
-      headers: authorizationHeaders(accessToken),
       body: JSON.stringify({ role }),
     })
   },
-
   listDepartments(accessToken, filters = {}) {
     const parameters = new URLSearchParams()
 
@@ -204,4 +222,29 @@ export const adminApi = {
       body: JSON.stringify(student),
     })
   },
+}
+
+export const academicApi = {
+  listDepartments: (token) => authorized('/admin/departments', token),
+  createDepartment: (token, body) => authorized('/admin/departments', token, { method: 'POST', body: JSON.stringify(body) }),
+  listCourses: (token) => authorized('/admin/courses', token),
+  createCourse: (token, body) => authorized('/admin/courses', token, { method: 'POST', body: JSON.stringify(body) }),
+  listTerms: (token) => authorized('/admin/terms', token),
+  createTerm: (token, body) => authorized('/admin/terms', token, { method: 'POST', body: JSON.stringify(body) }),
+  listTeachers: (token) => authorized('/admin/teachers', token),
+  listOfferings: (token) => authorized('/admin/offerings', token),
+  createOffering: (token, body) => authorized('/admin/offerings', token, { method: 'POST', body: JSON.stringify(body) }),
+  assignTeacher: (token, offeringId, teacherId) => authorized(`/admin/offerings/${offeringId}/teacher`, token, { method: 'PATCH', body: JSON.stringify({ teacherId }) }),
+  teacherOfferings: (token) => authorized('/teacher/offerings', token),
+  teacherStudents: (token, offeringId) => authorized(`/teacher/offerings/${offeringId}/students`, token),
+  teacherExams: (token, offeringId) => authorized(`/teacher/offerings/${offeringId}/exams`, token),
+  createExam: (token, offeringId, body) => authorized(`/teacher/offerings/${offeringId}/exams`, token, { method: 'POST', body: JSON.stringify(body) }),
+  saveResult: (token, enrollmentId, body) => authorized(`/teacher/enrollments/${enrollmentId}/result`, token, { method: 'PUT', body: JSON.stringify(body) }),
+  publishResult: (token, resultId) => authorized(`/teacher/results/${resultId}/publish`, token, { method: 'PATCH' }),
+  studentOfferings: (token) => authorized('/student/offerings', token),
+  enroll: (token, offeringId) => authorized(`/student/offerings/${offeringId}/enroll`, token, { method: 'POST', body: JSON.stringify({}) }),
+  studentEnrollments: (token) => authorized('/student/enrollments', token),
+  studentResults: (token) => authorized('/student/results', token),
+  studentProfile: (token) => authorized('/student/profile', token),
+  studentCalendar: (token) => authorized('/student/calendar', token),
 }

@@ -171,7 +171,7 @@ test('role changes revoke sessions and concurrent final-Admin removal is seriali
   const token = await adminToken();
   const changed = await request(app).patch(`/api/admin/users/${target.userId}/role`).set('Authorization', `Bearer ${token}`).send({ role: 'TEACHER' });
   assert.equal(changed.status, 200);
-  assert.equal((await request(app).get('/api/auth/me').set('Authorization', `Bearer ${targetLogin.body.data.accessToken}`)).status, 200);
+  assert.equal((await request(app).get('/api/auth/me').set('Authorization', `Bearer ${targetLogin.body.data.accessToken}`)).status, 401);
   const secondAdmin = await createStudent('second-admin');
   const promote = await request(app).patch(`/api/admin/users/${secondAdmin.userId}/role`).set('Authorization', `Bearer ${token}`).send({ role: 'ADMIN' });
   assert.equal(promote.status, 200);
