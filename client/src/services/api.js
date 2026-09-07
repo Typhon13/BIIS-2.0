@@ -127,4 +127,35 @@ export const adminApi = {
       body: JSON.stringify({ role }),
     })
   },
+
+  listDepartments(accessToken, filters = {}) {
+    const parameters = new URLSearchParams()
+
+    parameters.set('page', String(filters.page || 1))
+    parameters.set('limit', String(filters.limit || 10))
+
+    if (filters.search) {
+      parameters.set('search', filters.search)
+    }
+
+    return apiRequest(`/admin/departments?${parameters.toString()}`, {
+      headers: authorizationHeaders(accessToken),
+    })
+  },
+
+  createDepartment(accessToken, department) {
+    return apiRequest('/admin/departments', {
+      method: 'POST',
+      headers: authorizationHeaders(accessToken),
+      body: JSON.stringify(department),
+    })
+  },
+
+  updateDepartment(accessToken, deptId, updates) {
+    return apiRequest(`/admin/departments/${deptId}`, {
+      method: 'PATCH',
+      headers: authorizationHeaders(accessToken),
+      body: JSON.stringify(updates),
+    })
+  },
 }

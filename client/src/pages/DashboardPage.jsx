@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import AdminDepartmentManagement from '../components/admin/AdminDepartmentManagement'
 import AdminUserManagement from '../components/admin/AdminUserManagement'
 import DashboardLayout from '../components/DashboardLayout'
 import { useAuth } from '../context/AuthContext'
@@ -412,11 +413,12 @@ function DashboardPage() {
   }
 
   function renderModule() {
-    if (
-      activeItem === 'User Management' &&
-      user.role === 'ADMIN'
-    ) {
+    if (activeItem === 'User Management' && user.role === 'ADMIN') {
       return <AdminUserManagement />
+    }
+
+    if (activeItem === 'Departments' && user.role === 'ADMIN') {
+      return <AdminDepartmentManagement />
     }
 
     return (
