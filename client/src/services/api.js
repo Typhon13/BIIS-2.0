@@ -156,23 +156,19 @@ export const adminApi = {
       parameters.set('search', filters.search)
     }
 
-    return apiRequest(`/admin/departments?${parameters.toString()}`, {
-      headers: authorizationHeaders(accessToken),
-    })
+    return authorized(`/admin/departments?${parameters.toString()}`, accessToken)
   },
 
   createDepartment(accessToken, department) {
-    return apiRequest('/admin/departments', {
+    return authorized('/admin/departments', accessToken, {
       method: 'POST',
-      headers: authorizationHeaders(accessToken),
       body: JSON.stringify(department),
     })
   },
 
   updateDepartment(accessToken, deptId, updates) {
-    return apiRequest(`/admin/departments/${deptId}`, {
+    return authorized(`/admin/departments/${deptId}`, accessToken, {
       method: 'PATCH',
-      headers: authorizationHeaders(accessToken),
       body: JSON.stringify(updates),
     })
   },
@@ -191,15 +187,12 @@ export const adminApi = {
       parameters.set('deptId', filters.deptId)
     }
 
-    return apiRequest(`/admin/teachers?${parameters.toString()}`, {
-      headers: authorizationHeaders(accessToken),
-    })
+    return authorized(`/admin/teachers?${parameters.toString()}`, accessToken)
   },
 
   createTeacher(accessToken, teacher) {
-    return apiRequest('/admin/teachers', {
+    return authorized('/admin/teachers', accessToken, {
       method: 'POST',
-      headers: authorizationHeaders(accessToken),
       body: JSON.stringify(teacher),
     })
   },
@@ -210,15 +203,12 @@ export const adminApi = {
     parameters.set('limit', String(filters.limit || 10))
     if (filters.search) parameters.set('search', filters.search)
     if (filters.deptId) parameters.set('deptId', filters.deptId)
-    return apiRequest(`/admin/students?${parameters.toString()}`, {
-      headers: authorizationHeaders(accessToken),
-    })
+    return authorized(`/admin/students?${parameters.toString()}`, accessToken)
   },
 
   createStudent(accessToken, student) {
-    return apiRequest('/admin/students', {
+    return authorized('/admin/students', accessToken, {
       method: 'POST',
-      headers: authorizationHeaders(accessToken),
       body: JSON.stringify(student),
     })
   },
