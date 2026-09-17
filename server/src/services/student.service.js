@@ -47,4 +47,6 @@ async function calendar() {
   return studentRepository.listCalendar();
 }
 
-module.exports = { listOfferings, enroll, getEnrollment, listEnrollments, listResults, profile, calendar };
+async function notices(userId) { return studentRepository.listNotices(await requireStudent(userId)); }
+
+module.exports = { listOfferings, enroll, getEnrollment, listEnrollments, listResults, profile, calendar, notices };

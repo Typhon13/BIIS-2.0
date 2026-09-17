@@ -42,7 +42,10 @@ function AdminStudentManagement() {
     }
   }, [accessToken, filters])
 
-  useEffect(() => { loadStudents() }, [loadStudents])
+  useEffect(() => {
+    const task = window.setTimeout(loadStudents, 0)
+    return () => window.clearTimeout(task)
+  }, [loadStudents])
 
   useEffect(() => {
     adminApi.listDepartments(accessToken, { page: 1, limit: 100 })

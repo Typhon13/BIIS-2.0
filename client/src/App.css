@@ -1227,6 +1227,71 @@
   font: 14px Arial, Helvetica, sans-serif;
 }
 
+/* Reference-style student landing page */
+.legacy-banner { position: relative; height: 178px; display: flex; align-items: center; gap: 34px; overflow: hidden; padding: 14px 44px; background: linear-gradient(90deg, #fff 0 54%, #c8d9d9 100%); }
+.legacy-logo { width: 132px; height: 132px; object-fit: contain; z-index: 1; }
+.legacy-title { z-index: 1; }
+.legacy-title h1 { margin: 0; color: #260000; font-family: "Noto Serif Bengali", "Nirmala UI", serif; font-size: clamp(34px, 4vw, 59px); font-weight: 500; white-space: nowrap; }
+.legacy-title p { margin: 5px 0 0; color: #b21d22; font-size: clamp(20px, 2.1vw, 33px); font-weight: 700; letter-spacing: 1px; white-space: nowrap; text-shadow: 1px 2px 2px rgb(0 0 0 / 18%); }
+.legacy-campus { position: absolute; inset: 0 0 0 auto; width: 34%; height: 100%; object-fit: cover; opacity: .28; mask-image: linear-gradient(90deg, transparent, #000 34%); }
+.legacy-navbar { min-height: 44px; display: flex; align-items: center; background: #050505; }
+.legacy-navbar a, .legacy-navbar button { padding: 12px 17px; border: 0; color: #fff; background: transparent; cursor: pointer; font: 16px Arial, sans-serif; text-decoration: none; }
+.legacy-navbar a:hover, .legacy-navbar button:hover { background: #333; }
+.legacy-nav-spacer { flex: 1; }
+.legacy-student-home { min-height: 420px; padding: 22px 12px; }
+.legacy-student-summary { display: flex; justify-content: center; align-items: center; gap: 26px; }
+.legacy-student-photo { width: 216px; height: 264px; display: grid; place-items: center; border: 2px solid #9d291d; color: #fff; background: linear-gradient(#bbb, #555); font-size: 50px; font-weight: bold; }
+.legacy-student-details h2 { margin: 0 0 8px; font-size: 25px; }
+.legacy-student-details p { margin: 8px 0; font-size: 17px; }
+.legacy-loading-note { margin: 26px 0 22px; text-align: center; }
+.legacy-idle-note { width: fit-content; margin: 0 auto; padding: 5px 10px; border: 2px solid #555; background: #d2d2d2; font-size: 17px; }
+.teacher-workspace { display: grid; gap: 18px; }
+.teacher-course-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; padding: 18px; }
+.teacher-course-cards article { display: grid; gap: 7px; padding: 18px; border-left: 5px solid #80180e; background: #f7f5f1; box-shadow: 0 1px 5px rgb(0 0 0 / 14%); }
+.teacher-course-cards article > strong { color: #80180e; font-size: 21px; }
+.component-rule { margin: 0; padding: 14px 18px; border-bottom: 1px solid #d6cfc5; background: #fff7d7; }
+.component-form { padding: 18px; }
+.gradebook-wrap { max-width: 100%; overflow-x: auto; }
+.gradebook-table { min-width: 760px; }
+.gradebook-table th small, .gradebook-table td small { display: block; margin-top: 4px; }
+.gradebook-table td input { width: 78px; margin-right: 5px; padding: 6px; }
+.gradebook-table td button { padding: 6px 8px; }
+.gradebook-table .failed-row { background: #ffe0e0; color: #8b0000; }
+.student-link { padding: 0; border: 0; color: #78150d; background: transparent; font-weight: bold; text-decoration: underline; cursor: pointer; }
+.student-record-layout { display: grid; grid-template-columns: 240px 1fr; gap: 20px; padding: 18px; }
+.student-record-button { width: 100%; display: grid; gap: 3px; margin-bottom: 7px; padding: 10px; border: 1px solid #aaa; background: #eeeae4; text-align: left; cursor: pointer; }
+.student-detail-card { padding: 18px; border: 1px solid #aaa; background: #fff; }
+.student-detail-card h3 { margin-top: 0; color: #80180e; }
+.student-detail-card li { margin: 8px 0; }
+.notice-form { display: grid; gap: 14px; padding: 20px; }
+.notice-form label { display: grid; gap: 6px; font-weight: bold; }
+.notice-form input, .notice-form textarea { padding: 10px; border: 1px solid #999; font: inherit; }
+.notice-form button, .danger-button { width: fit-content; padding: 9px 14px; }
+.danger-button { margin-left: 6px; color: #fff; background: #991f1f !important; }
+.student-notices { display: grid; gap: 12px; padding: 16px; }
+.student-notices article { padding: 14px 16px; border-left: 5px solid #80180e; background: #f7f5f1; }
+.student-notices h3 { margin: 0 0 5px; color: #80180e; }
+.student-notices p { margin-bottom: 0; white-space: pre-wrap; }
+.failed-row { background: #ffe0e0 !important; color: #8b0000; }
+@media (max-width: 800px) {
+  .legacy-banner { height: auto; min-height: 128px; gap: 18px; padding: 16px; }
+  .legacy-logo { width: 86px; height: 86px; }
+  .legacy-title h1, .legacy-title p { white-space: normal; }
+  .legacy-campus { display: none; }
+  .legacy-navbar { flex-wrap: wrap; }
+  .legacy-nav-spacer { display: none; }
+  .legacy-student-summary { align-items: flex-start; }
+  .legacy-student-photo { width: 150px; height: 190px; flex: 0 0 auto; }
+}
+@media (max-width: 560px) {
+  .legacy-title h1 { font-size: 25px; }
+  .legacy-title p { font-size: 15px; }
+  .legacy-student-summary { flex-direction: column; align-items: center; }
+  .legacy-student-details { width: 100%; }
+  .legacy-idle-note { font-size: 14px; }
+  .student-record-layout { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 900px) {
   .student-profile-body {
     grid-template-columns: 1fr;
@@ -2010,4 +2075,31 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   .topbar-logout { margin-left: auto; }
   .portal-status-grid { grid-template-columns: 1fr; }
   .portal-status-grid article { min-height: 78px; }
+}
+/*
+ * StudentDashboard renders only the currently selected panel.
+ * This overrides the old multi-panel nth-of-type visibility rules.
+ */
+.module-view .student-workspace {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.module-view .student-workspace .academic-panel {
+  display: block;
+}
+
+.module-my-information .student-workspace .academic-panel,
+.module-academic-calendar .student-workspace .academic-panel,
+.module-add-or-drop-courses .student-workspace .academic-panel,
+.module-registration-and-enrolled-courses .student-workspace .academic-panel,
+.module-view-grades .student-workspace .academic-panel,
+.module-results-&-transcript .student-workspace .academic-panel,
+.module-notices .student-workspace .academic-panel {
+  display: block;
+}
+
+.module-results-and-transcript .student-workspace .academic-panel {
+  display: block;
 }

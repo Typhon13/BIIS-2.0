@@ -96,6 +96,7 @@ CREATE INDEX ix_addresses_user_id ON addresses(user_id);
 CREATE TABLE notices (
     notice_id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     title               VARCHAR(255) NOT NULL,
+    content             TEXT NOT NULL DEFAULT '',
     resolved_date       TIMESTAMPTZ,
     posted_by_user_id   BIGINT NOT NULL,
     post_date           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -284,7 +285,8 @@ CREATE TABLE courses (
     course_code     VARCHAR(30) NOT NULL,
     course_title    VARCHAR(200) NOT NULL,
     credit          NUMERIC(4,2) NOT NULL,
-    course_type     VARCHAR(50),
+    course_type     VARCHAR(20) NOT NULL DEFAULT 'THEORY',
+    total_marks     NUMERIC(7,2) NOT NULL DEFAULT 300,
     dept_id         BIGINT NOT NULL,
 
     CONSTRAINT fk_courses_department
@@ -295,6 +297,12 @@ CREATE TABLE courses (
 
     CONSTRAINT ck_courses_credit_positive
         CHECK (credit > 0),
+
+    CONSTRAINT ck_courses_type
+        CHECK (course_type IN ('THEORY', 'SESSIONAL')),
+
+    CONSTRAINT ck_courses_total_marks
+        CHECK (total_marks > 0),
 
     CONSTRAINT uq_courses_course_code
         UNIQUE (course_code)
@@ -735,4 +743,3 @@ VALUES
 ON CONFLICT (role_name) DO NOTHING;
 
 COMMIT;
-

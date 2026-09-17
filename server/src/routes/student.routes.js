@@ -14,5 +14,6 @@ router.get('/enrollments/:registrationId', ...studentOnly, registrationParamRule
 router.get('/results', ...studentOnly, controller.listResults);
 router.get('/profile', ...studentOnly, controller.profile);
 router.get('/calendar', ...studentOnly, controller.calendar);
+router.get('/notices', ...studentOnly, controller.notices);
 
 module.exports = router;

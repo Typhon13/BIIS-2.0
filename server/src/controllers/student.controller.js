@@ -25,5 +25,6 @@ async function listEnrollments(req, res) { try { return res.json({ success: true
 async function listResults(req, res) { try { return res.json({ success: true, data: await studentService.listResults(req.user.userId) }); } catch (error) { return handleError(error, res); } }
 async function profile(req, res) { try { return res.json({ success: true, data: await studentService.profile(req.user.userId) }); } catch (error) { return handleError(error, res); } }
 async function calendar(req, res) { try { return res.json({ success: true, data: await studentService.calendar() }); } catch (error) { return handleError(error, res); } }
+async function notices(req, res) { try { return res.json({ success: true, data: await studentService.notices(req.user.userId) }); } catch (error) { return handleError(error, res); } }
 
-module.exports = { listOfferings, enroll, enrollment, listEnrollments, listResults, profile, calendar };
+module.exports = { listOfferings, enroll, enrollment, listEnrollments, listResults, profile, calendar, notices };
