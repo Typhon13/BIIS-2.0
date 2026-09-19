@@ -15,5 +15,15 @@ router.get('/results', ...studentOnly, controller.listResults);
 router.get('/profile', ...studentOnly, controller.profile);
 router.get('/calendar', ...studentOnly, controller.calendar);
 router.get('/notices', ...studentOnly, controller.notices);
+router.get(
+  '/applications/scholarship',
+  ...studentOnly,
+  controller.listScholarshipApplications
+);
 
+router.post(
+  '/applications/scholarship',
+  ...studentOnly,
+  controller.createScholarshipApplication
+);
 module.exports = router;

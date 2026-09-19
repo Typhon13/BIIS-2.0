@@ -658,10 +658,34 @@ export const academicApi = {
     )
   },
 
-  studentNotices(accessToken) {
+
+
+    studentNotices(accessToken) {
     return authorized(
       '/student/notices',
       accessToken
     )
   },
+
+  studentScholarshipApplications(accessToken) {
+    return authorized(
+      '/student/applications/scholarship',
+      accessToken
+    )
+  },
+
+  submitScholarshipApplication(
+    accessToken,
+    application
+  ) {
+    return authorized(
+      '/student/applications/scholarship',
+      accessToken,
+      {
+        method: 'POST',
+        body: JSON.stringify(application),
+      }
+    )
+  },
+
 }

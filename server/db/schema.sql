@@ -734,6 +734,59 @@ CREATE INDEX ix_attendance_registration_id ON attendance(registration_id);
 CREATE INDEX ix_attendance_teacher_id ON attendance(recorded_by_teacher_id);
 CREATE INDEX ix_attendance_recorded_date ON attendance(recorded_date);
 
+--STUDENT APPLICATIONS
+CREATE TABLE student_applications (
+    application_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    student_id        BIGINT NOT NULL,
+    application_type  VARCHAR(50) NOT NULL,
+    subject           VARCHAR(200) NOT NULL,
+    statement         TEXT NOT NULL,
+    requested_amount  NUMERIC(12, 2),
+    status            VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    submitted_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at       TIMESTAMPTZ,
+    reviewer_remarks  TEXT,
+
+    CONSTRAINT fk_student_applications_student
+        FOREIGN KEY (student_id)
+        REFERENCES students(student_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_student_application_type
+        CHECK (
+            application_type IN (
+                'SCHOLARSHIP',
+                'TRUST_FUND_SCHOLARSHIP',
+                'LOAN',
+                'DEGREE_AWARD',
+                'TESTIMONIAL_CERTIFICATE'
+            )
+        ),
+
+    CONSTRAINT ck_student_application_status
+        CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+
+    CONSTRAINT ck_student_application_amount
+        CHECK (requested_amount IS NULL OR requested_amount > 0),
+
+    CONSTRAINT ck_student_application_review
+        CHECK (
+            (status = 'PENDING' AND reviewed_at IS NULL)
+            OR
+            (status IN ('APPROVED', 'REJECTED') AND reviewed_at IS NOT NULL)
+        )
+);
+
+CREATE INDEX ix_student_applications_student
+    ON student_applications(student_id);
+
+CREATE INDEX ix_student_applications_status
+    ON student_applications(status);
+
+CREATE UNIQUE INDEX ux_student_pending_application_type
+    ON student_applications(student_id, application_type)
+    WHERE status = 'PENDING';
 --DEFAULT ROLES
 INSERT INTO roles (role_name)
 VALUES

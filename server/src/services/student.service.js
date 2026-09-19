@@ -49,4 +49,60 @@ async function calendar() {
 
 async function notices(userId) { return studentRepository.listNotices(await requireStudent(userId)); }
 
-module.exports = { listOfferings, enroll, getEnrollment, listEnrollments, listResults, profile, calendar, notices };
+
+function requiredText(value, minimum, maximum) {
+  if (typeof value !== 'string') return null;
+
+  const cleaned = value.trim();
+
+  if (cleaned.length < minimum || cleaned.length > maximum) {
+    return null;
+  }
+
+  return cleaned;
+}
+
+async function createScholarshipApplication(userId, input = {}) {
+  const studentId = await requireStudent(userId);
+
+  const subject = requiredText(input.subject, 5, 200);
+  const statement = requiredText(input.statement, 20, 2000);
+  const requestedAmount = Number(input.requestedAmount);
+
+  if (
+    !subject ||
+    !statement ||
+    !Number.isFinite(requestedAmount) ||
+    requestedAmount <= 0
+  ) {
+    throw new Error('INVALID_APPLICATION');
+  }
+
+  return studentRepository.createApplication({
+    studentId,
+    type: 'SCHOLARSHIP',
+    subject,
+    statement,
+    requestedAmount,
+  });
+}
+
+async function listScholarshipApplications(userId) {
+  const studentId = await requireStudent(userId);
+
+  return studentRepository.listApplications(
+    studentId,
+    'SCHOLARSHIP'
+  );
+}
+module.exports = {
+  listOfferings,
+  enroll,
+  getEnrollment,
+  listEnrollments,
+  listResults,
+  profile,
+  calendar,
+  createScholarshipApplication,
+  listScholarshipApplications,
+};

@@ -603,6 +603,91 @@ async function listPublishedResults(
   }));
 }
 
+function mapApplication(row) {
+  return {
+    applicationId: String(row.application_id),
+    type: row.application_type,
+    subject: row.subject,
+    statement: row.statement,
+    requestedAmount:
+      row.requested_amount === null
+        ? null
+        : Number(row.requested_amount),
+    status: row.status,
+    submittedAt: row.submitted_at,
+    reviewedAt: row.reviewed_at,
+    reviewerRemarks: row.reviewer_remarks,
+  };
+}
+
+async function createApplication({
+  studentId,
+  type,
+  subject,
+  statement,
+  requestedAmount,
+}) {
+  try {
+    const result = await db.query(
+      `INSERT INTO student_applications (
+         student_id,
+         application_type,
+         subject,
+         statement,
+         requested_amount
+       )
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING
+         application_id,
+         application_type,
+         subject,
+         statement,
+         requested_amount,
+         status,
+         submitted_at,
+         reviewed_at,
+         reviewer_remarks`,
+      [
+        studentId,
+        type,
+        subject,
+        statement,
+        requestedAmount ?? null,
+      ]
+    );
+
+    return mapApplication(result.rows[0]);
+  } catch (error) {
+    if (error.code === '23505') {
+      throw new Error('DUPLICATE_PENDING_APPLICATION');
+    }
+
+    throw error;
+  }
+}
+
+async function listApplications(studentId, type) {
+  const result = await db.query(
+    `SELECT
+       application_id,
+       application_type,
+       subject,
+       statement,
+       requested_amount,
+       status,
+       submitted_at,
+       reviewed_at,
+       reviewer_remarks
+     FROM student_applications
+     WHERE student_id = $1
+       AND application_type = $2
+     ORDER BY submitted_at DESC, application_id DESC`,
+    [studentId, type]
+  );
+
+  return result.rows.map(mapApplication);
+}
+
 module.exports = {
   findStudentIdByUserId,
   findProfileByUserId,
@@ -612,5 +697,6 @@ module.exports = {
   findEnrollmentById,
   listEnrollments,
   listPublishedResults,
-  listNotices,
+  createApplication,
+  listApplications,
 };

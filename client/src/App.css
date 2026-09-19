@@ -2095,7 +2095,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .module-add-or-drop-courses .student-workspace .academic-panel,
 .module-registration-and-enrolled-courses .student-workspace .academic-panel,
 .module-view-grades .student-workspace .academic-panel,
-.module-results-&-transcript .student-workspace .academic-panel,
+.module-results-and-transcript .student-workspace .academic-panel,
 .module-notices .student-workspace .academic-panel {
   display: block;
 }

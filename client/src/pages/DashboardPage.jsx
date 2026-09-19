@@ -13,7 +13,7 @@ import AdminDepartmentManagement from '../components/admin/AdminDepartmentManage
 import AdminTeacherManagement from '../components/admin/AdminTeacherManagement'
 import AdminStudentManagement from '../components/admin/AdminStudentManagement'
 import DashboardLayout from '../components/DashboardLayout'
-
+import ScholarshipApplication from '../components/student/ScholarshipApplication';
 import {
   AdminAcademic,
   PasswordChange,
@@ -116,7 +116,7 @@ const navigationByRole = {
 }
 
 const unavailableStudentItems = [
-  'Scholarship Application',
+ 
   'Trust Fund Scholarship',
   'Loan Application',
   'Degree Award Application',
@@ -457,6 +457,12 @@ function DashboardPage() {
     ) {
       return <StudentAdviser />
     }
+    if (
+  user.role === 'STUDENT' &&
+  activeItem === 'Scholarship Application'
+) {
+  return <ScholarshipApplication />;
+}
 
     if (
       unavailableStudentItems.includes(
