@@ -1,0 +1,36 @@
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #000;
+  background: #f5f4f0;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0 0 20px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      #f7f6f2 0,
+      #f7f6f2 3px,
+      #e5e3dc 3px,
+      #e5e3dc 5px
+    );
+}
+
+button,
+input {
+  font: inherit;
+}
