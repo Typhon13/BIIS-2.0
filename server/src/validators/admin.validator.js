@@ -171,6 +171,33 @@ const studentListRules = () => [
     .matches(/^[1-9]\d*$/),
 ];
 
+const programListRules = () => [
+  query('deptId')
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(/^[1-9]\d*$/),
+];
+
+const createProgramRules = () => [
+  body('programName').trim().isLength({ min: 1, max: 150 }),
+  body('degreeLevel').trim().isLength({ min: 1, max: 80 }),
+  body('deptId').matches(/^[1-9]\d*$/),
+];
+
+const batchListRules = () => [
+  query('deptId')
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(/^[1-9]\d*$/),
+  query('programId')
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(/^[1-9]\d*$/),
+];
+
+const createBatchRules = () => [
+  body('batchName').trim().isLength({ min: 1, max: 100 }),
+  body('programId').matches(/^[1-9]\d*$/),
+  body('admissionYear').isInt({ min: 1900, max: 3000 }),
+];
+
 const createStudentRules = () => [
   body('username')
     .trim()
@@ -233,10 +260,10 @@ const updateStudentRules = () => [
     if (unexpected) throw new Error(`${unexpected} is not allowed`);
     return true;
   }),
-  body('username').trim().matches(/^[a-zA-Z0-9_.-]{3,80}$/),
-  body('email').trim().isEmail(),
-  body('studentIdNumber').trim().isLength({ min: 1, max: 50 }),
-  body('name').trim().isLength({ min: 2, max: 150 }),
+  body('username').optional().trim().matches(/^[a-zA-Z0-9_.-]{3,80}$/),
+  body('email').optional().trim().isEmail(),
+  body('studentIdNumber').optional().trim().isLength({ min: 1, max: 50 }),
+  body('name').optional().trim().isLength({ min: 2, max: 150 }),
   body('deptId').optional({ nullable: true, checkFalsy: true }).matches(/^[1-9]\d*$/),
   body('batchId').optional({ nullable: true, checkFalsy: true }).matches(/^[1-9]\d*$/),
   body('adviserId').optional({ nullable: true, checkFalsy: true }).matches(/^[1-9]\d*$/),
@@ -316,6 +343,10 @@ module.exports = {
   teacherListRules,
   createTeacherRules,
   studentListRules,
+  programListRules,
+  createProgramRules,
+  batchListRules,
+  createBatchRules,
   createStudentRules,
   updateStudentRules,
   statusRules,

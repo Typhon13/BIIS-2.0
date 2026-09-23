@@ -62,6 +62,31 @@ function mapStudent(row) {
   };
 }
 
+function mapProgram(row) {
+  return {
+    programId: String(row.program_id),
+    programName: row.program_name,
+    degreeLevel: row.degree_level,
+    departmentId: String(row.dept_id),
+    departmentName: row.dept_name,
+    departmentShortName: row.dept_short_name,
+  };
+}
+
+function mapBatch(row) {
+  return {
+    batchId: String(row.batch_id),
+    batchName: row.batch_name,
+    programId: String(row.program_id),
+    programName: row.program_name,
+    degreeLevel: row.degree_level,
+    departmentId: String(row.dept_id),
+    departmentName: row.dept_name,
+    departmentShortName: row.dept_short_name,
+    admissionYear: Number(row.admission_year),
+  };
+}
+
 async function listUsers({ page, limit, search, role, status }) {
   const values = [];
   const filters = [];
@@ -641,6 +666,114 @@ async function listStudents({ page, limit, search, deptId }) {
   return { students: result.rows.map(mapStudent), pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
 }
 
+async function listPrograms({ deptId }) {
+  const values = [];
+  const filters = [];
+
+  if (deptId) {
+    values.push(deptId);
+    filters.push(`p.dept_id = $${values.length}`);
+  }
+
+  const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+  const result = await db.query(
+    `SELECT p.program_id, p.program_name, p.degree_level, p.dept_id,
+            d.dept_name, d.dept_short_name
+       FROM programs p
+       JOIN departments d ON d.dept_id = p.dept_id
+       ${whereClause}
+      ORDER BY d.dept_short_name ASC, p.program_name ASC`,
+    values,
+  );
+
+  return { programs: result.rows.map(mapProgram) };
+}
+
+async function createProgram({ programName, degreeLevel, deptId }) {
+  try {
+    const result = await db.query(
+      `INSERT INTO programs (program_name, degree_level, dept_id)
+       VALUES ($1, $2, $3)
+       RETURNING program_id`,
+      [programName, degreeLevel, deptId],
+    );
+
+    const created = await db.query(
+      `SELECT p.program_id, p.program_name, p.degree_level, p.dept_id,
+              d.dept_name, d.dept_short_name
+         FROM programs p
+         JOIN departments d ON d.dept_id = p.dept_id
+        WHERE p.program_id = $1`,
+      [result.rows[0].program_id],
+    );
+
+    return mapProgram(created.rows[0]);
+  } catch (error) {
+    if (error.code === '23503') throw new Error('DEPARTMENT_NOT_FOUND');
+    if (error.code === '23505') throw new Error('PROGRAM_ALREADY_EXISTS');
+    throw new Error('PROGRAM_CREATE_FAILED');
+  }
+}
+
+async function listBatches({ deptId, programId }) {
+  const values = [];
+  const filters = [];
+
+  if (deptId) {
+    values.push(deptId);
+    filters.push(`p.dept_id = $${values.length}`);
+  }
+
+  if (programId) {
+    values.push(programId);
+    filters.push(`b.program_id = $${values.length}`);
+  }
+
+  const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+  const result = await db.query(
+    `SELECT b.batch_id, b.batch_name, b.program_id, b.admission_year,
+            p.program_name, p.degree_level, p.dept_id,
+            d.dept_name, d.dept_short_name
+       FROM batches b
+       JOIN programs p ON p.program_id = b.program_id
+       JOIN departments d ON d.dept_id = p.dept_id
+       ${whereClause}
+      ORDER BY d.dept_short_name ASC, p.program_name ASC, b.admission_year DESC, b.batch_name ASC`,
+    values,
+  );
+
+  return { batches: result.rows.map(mapBatch) };
+}
+
+async function createBatch({ batchName, programId, admissionYear }) {
+  try {
+    const result = await db.query(
+      `INSERT INTO batches (batch_name, program_id, admission_year)
+       VALUES ($1, $2, $3)
+       RETURNING batch_id`,
+      [batchName, programId, admissionYear],
+    );
+
+    const created = await db.query(
+      `SELECT b.batch_id, b.batch_name, b.program_id, b.admission_year,
+              p.program_name, p.degree_level, p.dept_id,
+              d.dept_name, d.dept_short_name
+         FROM batches b
+         JOIN programs p ON p.program_id = b.program_id
+         JOIN departments d ON d.dept_id = p.dept_id
+        WHERE b.batch_id = $1`,
+      [result.rows[0].batch_id],
+    );
+
+    return mapBatch(created.rows[0]);
+  } catch (error) {
+    if (error.code === '23503') throw new Error('PROGRAM_NOT_FOUND');
+    if (error.code === '23505') throw new Error('BATCH_ALREADY_EXISTS');
+    if (error.code === '23514') throw new Error('INVALID_BATCH_INPUT');
+    throw new Error('BATCH_CREATE_FAILED');
+  }
+}
+
 async function createStudent({ username, email, passwordHash, studentIdNumber, name, deptId, batchId, adviserId, phone, currentLevelTerm }) {
   const client = await db.pool.connect();
   try {
@@ -689,22 +822,41 @@ async function updateStudent(studentId, { username, email, studentIdNumber, name
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
-    const existing = await client.query('SELECT user_id FROM students WHERE student_id = $1 FOR UPDATE', [studentId]);
+    const existing = await client.query(
+      `SELECT s.user_id, s.student_id_number, s.name, s.dept_id, s.batch_id,
+              s.adviser_id, s.phone, s.current_level_term, u.username, u.email
+         FROM students s
+         JOIN users u ON u.user_id = s.user_id
+        WHERE s.student_id = $1
+        FOR UPDATE`,
+      [studentId],
+    );
     if (!existing.rows[0]) return null;
 
-    if (batchId) {
+    const current = existing.rows[0];
+    const nextUsername = username !== undefined ? username : current.username;
+    const nextEmail = email !== undefined ? email : current.email;
+    const nextStudentIdNumber = studentIdNumber !== undefined ? studentIdNumber : current.student_id_number;
+    const nextName = name !== undefined ? name : current.name;
+    const nextDeptId = deptId !== undefined ? deptId : current.dept_id;
+    const nextBatchId = batchId !== undefined ? batchId : current.batch_id;
+    const nextAdviserId = adviserId !== undefined ? adviserId : current.adviser_id;
+    const nextPhone = phone !== undefined ? phone : current.phone;
+    const nextCurrentLevelTerm = currentLevelTerm !== undefined ? currentLevelTerm : current.current_level_term;
+
+    if (nextBatchId) {
       const batch = await client.query(
         `SELECT b.batch_id, p.dept_id
            FROM batches b JOIN programs p ON p.program_id = b.program_id
           WHERE b.batch_id = $1`,
-        [batchId],
+        [nextBatchId],
       );
       if (!batch.rows[0]) throw new Error('BATCH_NOT_FOUND');
-      if (String(batch.rows[0].dept_id) !== String(deptId)) throw new Error('BATCH_DEPARTMENT_MISMATCH');
+      if (String(batch.rows[0].dept_id) !== String(nextDeptId)) throw new Error('BATCH_DEPARTMENT_MISMATCH');
     }
 
-    if (adviserId) {
-      const adviser = await client.query('SELECT teacher_id FROM teachers WHERE teacher_id = $1 AND dept_id = $2', [adviserId, deptId]);
+    if (nextAdviserId) {
+      const adviser = await client.query('SELECT teacher_id FROM teachers WHERE teacher_id = $1 AND dept_id = $2', [nextAdviserId, nextDeptId]);
       if (!adviser.rows[0]) throw new Error('ADVISER_NOT_FOUND');
     }
 
@@ -713,7 +865,7 @@ async function updateStudent(studentId, { username, email, studentIdNumber, name
           SET username = $1, email = $2
               ${passwordHash ? ', password_hash = $3' : ''}
         WHERE user_id = $${passwordHash ? 4 : 3}`,
-      passwordHash ? [username, email, passwordHash, existing.rows[0].user_id] : [username, email, existing.rows[0].user_id],
+      passwordHash ? [nextUsername, nextEmail, passwordHash, current.user_id] : [nextUsername, nextEmail, current.user_id],
     );
 
     await client.query(
@@ -721,7 +873,7 @@ async function updateStudent(studentId, { username, email, studentIdNumber, name
           SET student_id_number = $1, name = $2, dept_id = $3, batch_id = $4,
               adviser_id = $5, phone = $6, current_level_term = $7
         WHERE student_id = $8`,
-      [studentIdNumber, name, deptId || null, batchId || null, adviserId || null, phone || null, currentLevelTerm || null, studentId],
+      [nextStudentIdNumber, nextName, nextDeptId || null, nextBatchId || null, nextAdviserId || null, nextPhone || null, nextCurrentLevelTerm || null, studentId],
     );
 
     const result = await client.query(
@@ -846,6 +998,10 @@ module.exports = {
   listTeachers,
   createTeacher,
   listStudents,
+  listPrograms,
+  createProgram,
+  listBatches,
+  createBatch,
   createStudent,
   updateStudent,
   createDepartment,

@@ -12,6 +12,7 @@ import AdminUserManagement from '../components/admin/AdminUserManagement'
 import AdminDepartmentManagement from '../components/admin/AdminDepartmentManagement'
 import AdminTeacherManagement from '../components/admin/AdminTeacherManagement'
 import AdminStudentManagement from '../components/admin/AdminStudentManagement'
+import AdminAdviserManagement from '../components/admin/AdminAdviserManagement'
 import DashboardLayout from '../components/DashboardLayout'
 import ScholarshipApplication from '../components/student/ScholarshipApplication';
 import {
@@ -41,6 +42,7 @@ const navigationByRole = {
         'Departments',
         'Teachers',
         'Students',
+        'Advisers',
       ],
     },
     {
@@ -423,6 +425,15 @@ function DashboardPage() {
     ) {
       return (
         <AdminStudentManagement />
+      )
+    }
+
+    if (
+      user.role === 'ADMIN' &&
+      activeItem === 'Advisers'
+    ) {
+      return (
+        <AdminAdviserManagement />
       )
     }
 

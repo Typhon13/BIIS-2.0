@@ -214,24 +214,66 @@ async function createStudent(input) {
 
 async function updateStudent(studentIdValue, input) {
   if (!/^[1-9]\d*$/.test(String(studentIdValue))) throw new Error('INVALID_STUDENT_INPUT');
-  const normalized = {
-    username: String(input.username || '').trim(),
-    email: String(input.email || '').trim().toLowerCase(),
-    studentIdNumber: String(input.studentIdNumber || '').trim(),
-    name: String(input.name || '').trim(),
-    deptId: input.deptId ? String(input.deptId).trim() : '',
-    batchId: input.batchId ? String(input.batchId).trim() : '',
-    adviserId: input.adviserId ? String(input.adviserId).trim() : '',
-    phone: String(input.phone || '').trim(),
-    currentLevelTerm: String(input.currentLevelTerm || '').trim(),
-  };
-  if (!/^[a-zA-Z0-9_.-]{3,80}$/.test(normalized.username) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized.email) || !normalized.name || !normalized.studentIdNumber) throw new Error('INVALID_STUDENT_INPUT');
+  const normalized = {};
+
+  if (Object.prototype.hasOwnProperty.call(input, 'username')) normalized.username = String(input.username || '').trim();
+  if (Object.prototype.hasOwnProperty.call(input, 'email')) normalized.email = String(input.email || '').trim().toLowerCase();
+  if (Object.prototype.hasOwnProperty.call(input, 'studentIdNumber')) normalized.studentIdNumber = String(input.studentIdNumber || '').trim();
+  if (Object.prototype.hasOwnProperty.call(input, 'name')) normalized.name = String(input.name || '').trim();
+  if (Object.prototype.hasOwnProperty.call(input, 'deptId')) normalized.deptId = input.deptId ? String(input.deptId).trim() : '';
+  if (Object.prototype.hasOwnProperty.call(input, 'batchId')) normalized.batchId = input.batchId ? String(input.batchId).trim() : '';
+  if (Object.prototype.hasOwnProperty.call(input, 'adviserId')) normalized.adviserId = input.adviserId ? String(input.adviserId).trim() : '';
+  if (Object.prototype.hasOwnProperty.call(input, 'phone')) normalized.phone = String(input.phone || '').trim();
+  if (Object.prototype.hasOwnProperty.call(input, 'currentLevelTerm')) normalized.currentLevelTerm = String(input.currentLevelTerm || '').trim();
+
+  if (normalized.username !== undefined && !/^[a-zA-Z0-9_.-]{3,80}$/.test(normalized.username)) throw new Error('INVALID_STUDENT_INPUT');
+  if (normalized.email !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized.email)) throw new Error('INVALID_STUDENT_INPUT');
+  if (normalized.name !== undefined && (!normalized.name || normalized.name.length > 150)) throw new Error('INVALID_STUDENT_INPUT');
+  if (normalized.studentIdNumber !== undefined && (!normalized.studentIdNumber || normalized.studentIdNumber.length > 50)) throw new Error('INVALID_STUDENT_INPUT');
   if (normalized.deptId && !/^[1-9]\d*$/.test(normalized.deptId)) throw new Error('INVALID_STUDENT_REFERENCE');
   if (normalized.batchId && !/^[1-9]\d*$/.test(normalized.batchId)) throw new Error('INVALID_STUDENT_REFERENCE');
   if (normalized.adviserId && !/^[1-9]\d*$/.test(normalized.adviserId)) throw new Error('INVALID_STUDENT_REFERENCE');
-  if (normalized.phone.length > 30 || normalized.currentLevelTerm.length > 30) throw new Error('INVALID_STUDENT_INPUT');
+  if ((normalized.phone || '').length > 30 || (normalized.currentLevelTerm || '').length > 30) throw new Error('INVALID_STUDENT_INPUT');
   const passwordHash = input.password ? await passwordUtils.hashPassword(input.password) : null;
   return adminRepository.updateStudent(studentIdValue, { ...normalized, passwordHash });
+}
+
+async function listPrograms(query) {
+  const deptId = query.deptId === undefined || query.deptId === '' ? undefined : parseDepartmentId(String(query.deptId));
+  return adminRepository.listPrograms({ deptId });
+}
+
+async function createProgram(input) {
+  const programName = String(input.programName || '').trim();
+  const degreeLevel = String(input.degreeLevel || '').trim();
+  const deptId = parseDepartmentId(String(input.deptId || ''));
+
+  if (!programName || programName.length > 150 || !degreeLevel || degreeLevel.length > 80) {
+    throw new Error('INVALID_PROGRAM_INPUT');
+  }
+
+  return adminRepository.createProgram({ programName, degreeLevel, deptId });
+}
+
+async function listBatches(query) {
+  const deptId = query.deptId === undefined || query.deptId === '' ? undefined : parseDepartmentId(String(query.deptId));
+  const programId = query.programId === undefined || query.programId === '' ? undefined : String(query.programId);
+
+  if (programId && !/^[1-9]\d*$/.test(programId)) throw new Error('INVALID_PROGRAM_ID');
+
+  return adminRepository.listBatches({ deptId, programId });
+}
+
+async function createBatch(input) {
+  const batchName = String(input.batchName || '').trim();
+  const programId = String(input.programId || '').trim();
+  const admissionYear = Number(input.admissionYear);
+
+  if (!batchName || batchName.length > 100 || !/^[1-9]\d*$/.test(programId) || !Number.isInteger(admissionYear) || admissionYear < 1900 || admissionYear > 3000) {
+    throw new Error('INVALID_BATCH_INPUT');
+  }
+
+  return adminRepository.createBatch({ batchName, programId, admissionYear });
 }
 
 async function createDepartment({ deptName, deptShortName }) {
@@ -284,6 +326,10 @@ module.exports = {
   listTeachers,
   createTeacher,
   listStudents,
+  listPrograms,
+  createProgram,
+  listBatches,
+  createBatch,
   createStudent,
   updateStudent,
   createDepartment,

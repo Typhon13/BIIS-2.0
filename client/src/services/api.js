@@ -347,6 +347,58 @@ export const adminApi = {
     )
   },
 
+  listPrograms(accessToken, filters = {}) {
+    const parameters = new URLSearchParams()
+
+    if (filters.deptId) {
+      parameters.set('deptId', filters.deptId)
+    }
+
+    return authorized(
+      `/admin/programs?${parameters.toString()}`,
+      accessToken
+    )
+  },
+
+  createProgram(accessToken, program) {
+    return authorized(
+      '/admin/programs',
+      accessToken,
+      {
+        method: 'POST',
+        body: JSON.stringify(program),
+      }
+    )
+  },
+
+  listBatches(accessToken, filters = {}) {
+    const parameters = new URLSearchParams()
+
+    if (filters.deptId) {
+      parameters.set('deptId', filters.deptId)
+    }
+
+    if (filters.programId) {
+      parameters.set('programId', filters.programId)
+    }
+
+    return authorized(
+      `/admin/batches?${parameters.toString()}`,
+      accessToken
+    )
+  },
+
+  createBatch(accessToken, batch) {
+    return authorized(
+      '/admin/batches',
+      accessToken,
+      {
+        method: 'POST',
+        body: JSON.stringify(batch),
+      }
+    )
+  },
+
   createStudent(accessToken, student) {
     return authorized(
       '/admin/students',

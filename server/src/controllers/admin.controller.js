@@ -32,6 +32,15 @@ function errorResponse(error, res) {
     ADVISER_NOT_FOUND: [404, 'Adviser not found in the selected department'],
     DUPLICATE_STUDENT: [409, 'Student account is already in use'],
     STUDENT_CREATE_FAILED: [500, 'Student creation failed'],
+    STUDENT_UPDATE_FAILED: [500, 'Student update failed'],
+    INVALID_PROGRAM_ID: [400, 'Invalid program ID'],
+    INVALID_PROGRAM_INPUT: [400, 'Program information is invalid'],
+    PROGRAM_NOT_FOUND: [404, 'Program not found'],
+    PROGRAM_ALREADY_EXISTS: [409, 'A program with that name already exists in the department'],
+    PROGRAM_CREATE_FAILED: [500, 'Program creation failed'],
+    INVALID_BATCH_INPUT: [400, 'Batch information is invalid'],
+    BATCH_ALREADY_EXISTS: [409, 'A batch with that name already exists in the program'],
+    BATCH_CREATE_FAILED: [500, 'Batch creation failed'],
   };
 
   const [status, message] = map[error.message] || [500, 'Admin operation failed'];
@@ -49,7 +58,11 @@ async function updateDepartment(req, res) { try { const department = await admin
 async function listTeachers(req, res) { try { return res.json({ success: true, data: await adminService.listTeachers(req.query) }); } catch (error) { return errorResponse(error, res); } }
 async function createTeacher(req, res) { try { const teacher = await adminService.createTeacher(req.body); return res.status(201).json({ success: true, data: { teacher } }); } catch (error) { return errorResponse(error, res); } }
 async function listStudents(req, res) { try { return res.json({ success: true, data: await adminService.listStudents(req.query) }); } catch (error) { return errorResponse(error, res); } }
+async function listPrograms(req, res) { try { return res.json({ success: true, data: await adminService.listPrograms(req.query) }); } catch (error) { return errorResponse(error, res); } }
+async function createProgram(req, res) { try { const program = await adminService.createProgram(req.body); return res.status(201).json({ success: true, data: { program } }); } catch (error) { return errorResponse(error, res); } }
+async function listBatches(req, res) { try { return res.json({ success: true, data: await adminService.listBatches(req.query) }); } catch (error) { return errorResponse(error, res); } }
+async function createBatch(req, res) { try { const batch = await adminService.createBatch(req.body); return res.status(201).json({ success: true, data: { batch } }); } catch (error) { return errorResponse(error, res); } }
 async function createStudent(req, res) { try { const student = await adminService.createStudent(req.body); return res.status(201).json({ success: true, data: { student } }); } catch (error) { return errorResponse(error, res); } }
 async function updateStudent(req, res) { try { const student = await adminService.updateStudent(req.params.studentId, req.body); if (!student) return res.status(404).json({ success: false, message: 'Student not found' }); return res.json({ success: true, data: { student } }); } catch (error) { return errorResponse(error, res); } }
 
-module.exports = { list, getOne, updateStatus, updateRole, listDepartments, getDepartment, createDepartment, updateDepartment, listTeachers, createTeacher, listStudents, createStudent, updateStudent };
+module.exports = { list, getOne, updateStatus, updateRole, listDepartments, getDepartment, createDepartment, updateDepartment, listTeachers, createTeacher, listStudents, listPrograms, createProgram, listBatches, createBatch, createStudent, updateStudent };

@@ -2,6 +2,7 @@ import buetLogo from '../assets/buet-logo.png'
 import hero from '../assets/hero.png'
 
 function DashboardLayout({
+  user,
   groups,
   expandedGroup,
   activeItem,
@@ -27,7 +28,18 @@ function DashboardLayout({
         <nav className="legacy-navbar" aria-label="Primary navigation">
           <a href="https://www.buet.ac.bd/" target="_blank" rel="noreferrer">BUET Home</a>
           <button type="button" onClick={() => onSelect('Overview')}>Home</button>
-          <button type="button" onClick={() => onSelect('My Information')}>Profile</button>
+          <button
+            type="button"
+            onClick={() =>
+              onSelect(
+                user?.role === 'STUDENT'
+                  ? 'My Information'
+                  : 'Overview'
+              )
+            }
+          >
+            Profile
+          </button>
           <span className="legacy-nav-spacer" />
 
           <button type="button" onClick={onToggleSidebar} className="mobile-menu-button" aria-expanded={isSidebarOpen}>
