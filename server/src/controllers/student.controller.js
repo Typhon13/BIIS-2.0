@@ -78,7 +78,9 @@ function handleError(error, res) {
 async function listOfferings(req, res) {
   try {
     const data =
-      await studentService.listOfferings()
+      await studentService.listOfferings(
+        req.user.userId
+      )
 
     return res.json({
       success: true,

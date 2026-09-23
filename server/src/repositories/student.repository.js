@@ -126,6 +126,25 @@ const offeringSelect = `
       s.status AS semester_status,
       t.teacher_id,
       t.name AS teacher_name,
+      CASE
+        WHEN b.admission_year IS NOT NULL THEN
+          regexp_replace(
+            COALESCE(p.degree_level, p.program_name, 'BSc'),
+            '[^A-Za-z0-9]+',
+            '',
+            'g'
+          )
+          || '_' || COALESCE(sd.dept_short_name, d.dept_short_name)
+          || '_' || b.admission_year::text
+        ELSE
+          COALESCE(sd.dept_short_name, d.dept_short_name, 'SYLLABUS')
+          || CASE
+               WHEN sd.dept_short_name IS NULL
+                AND d.dept_short_name IS NULL
+               THEN ''
+               ELSE '_SYLLABUS'
+             END
+      END AS syllabus_id,
       COUNT(r.registration_id)
         FILTER (
           WHERE r.status = 'ACTIVE'
@@ -144,6 +163,18 @@ const offeringSelect = `
          oc.offered_course_id
 `;
 
+function courseNumber(code, departmentCode) {
+  if (!code) {
+    return code
+  }
+
+  if (/^[A-Za-z]/.test(code) || !departmentCode) {
+    return code
+  }
+
+  return `${departmentCode} ${code}`
+}
+
 function mapOffering(row) {
   return {
     offeringId: String(
@@ -155,10 +186,14 @@ function mapOffering(row) {
     enrolledCount: Number(
       row.enrolled_count || 0
     ),
+    syllabusId: row.syllabus_id || null,
 
     course: {
       courseId: String(row.course_id),
-      code: row.course_code,
+      code: courseNumber(
+        row.course_code,
+        row.dept_short_name
+      ),
       title: row.course_title,
       credit: Number(row.credit),
       type: row.course_type,
@@ -193,19 +228,38 @@ function mapOffering(row) {
   };
 }
 
-async function listAvailableOfferings() {
+async function listAvailableOfferings(studentId) {
   const result = await db.query(
     `${offeringSelect}
+     JOIN students st
+       ON st.student_id = $1
+     LEFT JOIN departments sd
+       ON sd.dept_id = st.dept_id
+     LEFT JOIN batches b
+       ON b.batch_id = st.batch_id
+     LEFT JOIN programs p
+       ON p.program_id = b.program_id
      WHERE s.status IN (
        'UPCOMING',
        'ACTIVE'
      )
+       AND NOT EXISTS (
+         SELECT 1
+           FROM registrations existing
+          WHERE existing.student_id = st.student_id
+            AND existing.offered_course_id = oc.offered_course_id
+            AND existing.status IN ('PENDING', 'ACTIVE')
+       )
      GROUP BY
        oc.offered_course_id,
        c.course_id,
        d.dept_id,
        s.semester_id,
-       t.teacher_id
+       t.teacher_id,
+       sd.dept_short_name,
+       b.admission_year,
+       p.degree_level,
+       p.program_name
      HAVING COUNT(r.registration_id)
        FILTER (
          WHERE r.status = 'ACTIVE'
@@ -213,7 +267,8 @@ async function listAvailableOfferings() {
      ORDER BY
        s.start_date,
        c.course_code,
-       oc.section`
+       oc.section`,
+    [studentId]
   );
 
   return result.rows.map(mapOffering);
@@ -274,20 +329,6 @@ async function enroll({
       throw new Error('OFFERING_FULL');
     }
 
-    const result = await client.query(
-      `INSERT INTO registrations (
-          student_id,
-          offered_course_id,
-          status
-       )
-       VALUES ($1, $2, 'ACTIVE')
-       RETURNING
-          registration_id,
-          registration_date,
-          status`,
-      [studentId, offeringId]
-    );
-
     const adviser = await client.query(
       `SELECT adviser_id
          FROM students
@@ -295,25 +336,101 @@ async function enroll({
       [studentId]
     );
 
-    if (adviser.rows[0]?.adviser_id) {
-      await client.query(
-        `INSERT INTO approvals (
+    const adviserId = adviser.rows[0]?.adviser_id || null;
+    const nextStatus = adviserId ? 'PENDING' : 'ACTIVE';
+
+    const existing = await client.query(
+      `SELECT
+          registration_id,
+          status
+         FROM registrations
+        WHERE student_id = $1
+          AND offered_course_id = $2
+        FOR UPDATE`,
+      [studentId, offeringId]
+    );
+
+    let result;
+
+    if (existing.rows[0]) {
+      if (
+        ['PENDING', 'ACTIVE'].includes(
+          existing.rows[0].status
+        )
+      ) {
+        throw new Error(
+          'DUPLICATE_ENROLLMENT'
+        );
+      }
+
+      result = await client.query(
+        `UPDATE registrations
+            SET status = $2,
+                registration_date =
+                  CURRENT_TIMESTAMP
+          WHERE registration_id = $1
+          RETURNING
             registration_id,
-            approver_teacher_id,
-            approval_type,
-            approval_status
-         )
-         VALUES (
-            $1,
-            $2,
-            'COURSE_REGISTRATION',
-            'PENDING'
-         )`,
+            registration_date,
+            status`,
         [
-          result.rows[0].registration_id,
-          adviser.rows[0].adviser_id,
+          existing.rows[0].registration_id,
+          nextStatus,
         ]
       );
+    } else {
+      result = await client.query(
+        `INSERT INTO registrations (
+            student_id,
+            offered_course_id,
+            status
+         )
+         VALUES ($1, $2, $3)
+         RETURNING
+            registration_id,
+            registration_date,
+            status`,
+        [studentId, offeringId, nextStatus]
+      );
+    }
+
+    if (adviserId) {
+      const updatedApproval = await client.query(
+        `UPDATE approvals
+            SET approval_status = 'PENDING',
+                remarks = NULL,
+                approval_date = NULL,
+                approver_teacher_id = $2
+          WHERE registration_id = $1
+            AND approval_type =
+                'COURSE_REGISTRATION'
+          RETURNING approval_id`,
+        [
+          result.rows[0].registration_id,
+          adviserId,
+        ]
+      );
+
+      if (!updatedApproval.rows[0]) {
+        await client.query(
+          `INSERT INTO approvals (
+              registration_id,
+              approver_teacher_id,
+              approval_type,
+              approval_status
+           )
+           VALUES (
+              $1,
+              $2,
+              'COURSE_REGISTRATION',
+              'PENDING'
+           )`,
+          [
+            result.rows[0].registration_id,
+            adviserId,
+          ]
+        );
+      }
     }
 
     await client.query('COMMIT');
@@ -349,7 +466,7 @@ async function listEnrollments(studentId) {
         r.registration_date,
         r.status,
         a.approval_status,
-        a.remarks AS approval_remarks,
+        a.approval_remarks,
         oc.offered_course_id,
         oc.section,
         c.course_id,
@@ -358,22 +475,54 @@ async function listEnrollments(studentId) {
         c.credit,
         c.course_type,
         c.total_marks AS course_total_marks,
+        d.dept_short_name,
         s.semester_id,
         s.semester_name,
-        s.academic_year
+        s.academic_year,
+        CASE
+          WHEN b.admission_year IS NOT NULL THEN
+            regexp_replace(
+              COALESCE(p.degree_level, p.program_name, 'BSc'),
+              '[^A-Za-z0-9]+',
+              '',
+              'g'
+            )
+            || '_' || COALESCE(sd.dept_short_name, d.dept_short_name)
+            || '_' || b.admission_year::text
+          ELSE
+            COALESCE(sd.dept_short_name, d.dept_short_name)
+            || '_SYLLABUS'
+        END AS syllabus_id
        FROM registrations r
        JOIN offered_courses oc
          ON oc.offered_course_id =
             r.offered_course_id
        JOIN courses c
          ON c.course_id = oc.course_id
+       JOIN departments d
+         ON d.dept_id = c.dept_id
        JOIN semesters s
          ON s.semester_id = oc.semester_id
-       LEFT JOIN approvals a
-         ON a.registration_id =
-            r.registration_id
-        AND a.approval_type =
-            'COURSE_REGISTRATION'
+       JOIN students st
+         ON st.student_id = r.student_id
+       LEFT JOIN departments sd
+         ON sd.dept_id = st.dept_id
+       LEFT JOIN batches b
+         ON b.batch_id = st.batch_id
+       LEFT JOIN programs p
+         ON p.program_id = b.program_id
+       LEFT JOIN LATERAL (
+         SELECT
+            a.approval_status,
+            a.remarks AS approval_remarks
+           FROM approvals a
+          WHERE a.registration_id =
+                r.registration_id
+            AND a.approval_type =
+                'COURSE_REGISTRATION'
+          ORDER BY a.approval_id DESC
+          LIMIT 1
+       ) a ON TRUE
       WHERE r.student_id = $1
       ORDER BY
         s.start_date DESC,
@@ -402,9 +551,14 @@ async function listEnrollments(studentId) {
     approvalRemarks:
       row.approval_remarks,
 
+    syllabusId: row.syllabus_id || null,
+
     course: {
       courseId: String(row.course_id),
-      code: row.course_code,
+      code: courseNumber(
+        row.course_code,
+        row.dept_short_name
+      ),
       title: row.course_title,
       credit: Number(row.credit),
       type: row.course_type,

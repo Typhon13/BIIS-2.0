@@ -23,6 +23,8 @@ import {
 
 import TeacherDashboard from '../components/TeacherDashboard'
 import StudentDashboard from '../components/StudentDashboard'
+import CourseSelection from './CourseSelection'
+import RegisteredCourses from './RegisteredCourses'
 
 import {
   useAuth,
@@ -473,6 +475,14 @@ function DashboardPage() {
 ) {
   return <ScholarshipApplication />;
 }
+
+    if (activeItem === 'Add or Drop Courses') {
+      return <CourseSelection />
+    }
+
+    if (activeItem === 'Registration and enrolled courses') {
+      return <RegisteredCourses />
+    }
 
     if (
       unavailableStudentItems.includes(

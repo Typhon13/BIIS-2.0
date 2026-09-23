@@ -2103,3 +2103,162 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .module-results-and-transcript .student-workspace .academic-panel {
   display: block;
 }
+
+.biis-course-page {
+  padding: 8px 4px 24px;
+  color: #222;
+}
+
+.biis-course-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.biis-course-heading h2 {
+  margin: 0;
+  color: #8b0000;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.biis-admit-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #0b4ea2;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.biis-admit-card:hover {
+  text-decoration: underline;
+}
+
+.biis-admit-icon {
+  color: #c41e1e;
+  font-size: 18px;
+}
+
+.biis-course-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 2px solid #8b0000;
+  font-size: 14px;
+}
+
+.biis-course-table th,
+.biis-course-table td {
+  border: 1px solid #8b0000;
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+
+.biis-course-table th {
+  background: #ececec;
+  text-align: center;
+  font-weight: 700;
+}
+
+.biis-course-table td {
+  text-align: left;
+}
+
+.biis-course-table td.biis-course-select,
+.biis-course-table th.biis-course-select,
+.biis-course-table td.biis-course-credit {
+  text-align: center;
+}
+
+.biis-course-table tbody tr:nth-child(even) {
+  background: #f4f4f4;
+}
+
+.biis-course-table tbody tr:hover {
+  background: #f8ecec;
+}
+
+.biis-course-table label {
+  cursor: pointer;
+}
+
+.biis-course-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #8b0000;
+}
+
+.biis-course-total td {
+  background: #ececec;
+  font-weight: 700;
+  text-align: right;
+}
+
+.biis-course-total .biis-course-credit {
+  text-align: center;
+}
+
+.biis-course-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.biis-course-actions button {
+  background: #8b0000;
+  color: #fff;
+  border: 0;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.biis-course-actions button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.biis-course-banner,
+.biis-course-status,
+.biis-course-empty,
+.biis-course-footnote {
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+
+.biis-course-banner {
+  padding: 10px 12px;
+  border: 1px solid;
+  font-weight: 700;
+}
+
+.biis-course-banner-error,
+.biis-course-error {
+  color: #8b160d;
+  background: #fae9e7;
+  border-color: #a32318;
+}
+
+.biis-course-banner-success {
+  color: #155d2f;
+  background: #e6f4ea;
+  border-color: #267141;
+}
+
+.biis-course-footnote {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.teacher-request-pending td {
+  background: #fff6e8;
+}

@@ -1083,6 +1083,12 @@ export default function TeacherDashboard({
                   {requests.map(
                     (item) => (
                       <tr
+                        className={
+                          item.status ===
+                          'PENDING'
+                            ? 'teacher-request-pending'
+                            : ''
+                        }
                         key={
                           item.approvalId
                         }

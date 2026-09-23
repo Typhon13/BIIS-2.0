@@ -12,8 +12,9 @@ async function requireStudent(userId) {
   return String(student.student_id);
 }
 
-async function listOfferings() {
-  return studentRepository.listAvailableOfferings();
+async function listOfferings(userId) {
+  const studentId = await requireStudent(userId);
+  return studentRepository.listAvailableOfferings(studentId);
 }
 
 async function enroll(userId, offeringIdValue) {
