@@ -46,7 +46,6 @@ const navigationByRole = {
     {
       title: 'ACADEMIC SETUP',
       items: [
-        'Academic Departments',
         'Courses',
         'Academic Terms',
         'Course Offerings',
