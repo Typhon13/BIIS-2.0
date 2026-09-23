@@ -799,7 +799,7 @@ async function updateDepartment(deptId, updates) {
         throw new Error('DEPARTMENT_HEAD_MISMATCH');
       }
 
-      if (teacher.dept_id !== Number(deptId)) {
+      if (String(teacher.dept_id) !== String(deptId)) {
         throw new Error('DEPARTMENT_HEAD_MISMATCH');
       }
     }
@@ -817,10 +817,7 @@ async function updateDepartment(deptId, updates) {
     );
 
     await client.query('COMMIT');
-    return mapDepartment({
-      ...updated.rows[0],
-      teacher_count: 0,
-    });
+    return findDepartmentById(deptId);
   } catch (error) {
     await client.query('ROLLBACK');
     const databaseError = error && error.message ? error.message : '';
