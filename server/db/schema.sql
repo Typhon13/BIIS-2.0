@@ -795,4 +795,65 @@ VALUES
     ('STUDENT')
 ON CONFLICT (role_name) DO NOTHING;
 
+
+-- Overall percentage across a student's published exam results.
+CREATE OR REPLACE FUNCTION student_published_percentage(p_student_id BIGINT)
+RETURNS NUMERIC(5, 2)
+LANGUAGE SQL
+STABLE
+AS $$
+  SELECT ROUND(
+    100 * SUM(r.marks_obtained) / NULLIF(SUM(e.total_marks), 0),
+    2
+  )::NUMERIC(5, 2)
+  FROM results r
+  JOIN exams e ON e.exam_id = r.exam_id
+  WHERE r.student_id = p_student_id
+    AND r.published_at IS NOT NULL;
+$$;
+
+-- Publish grades and notify the class as one database operation.
+CREATE OR REPLACE PROCEDURE publish_offering_results(
+  IN p_offering_id BIGINT,
+  IN p_teacher_id BIGINT,
+  INOUT p_published_count INTEGER
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_user_id BIGINT;
+BEGIN
+  SELECT t.user_id INTO v_user_id
+  FROM offered_courses oc
+  JOIN teachers t ON t.teacher_id = oc.teacher_id
+  WHERE oc.offered_course_id = p_offering_id
+    AND oc.teacher_id = p_teacher_id;
+
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Offering is not assigned to this teacher'
+      USING ERRCODE = '42501';
+  END IF;
+
+  UPDATE results r
+  SET published_at = CURRENT_TIMESTAMP
+  FROM exams e
+  WHERE r.exam_id = e.exam_id
+    AND e.offered_course_id = p_offering_id
+    AND r.published_at IS NULL;
+
+  GET DIAGNOSTICS p_published_count = ROW_COUNT;
+
+  IF p_published_count > 0 THEN
+    INSERT INTO notices (
+      title, content, posted_by_user_id, target_audience
+    )
+    VALUES (
+      'Results published',
+      'New examination results are available for this course.',
+      v_user_id,
+      'OFFERING:' || p_offering_id
+    );
+  END IF;
+END;
+$$;
 COMMIT;

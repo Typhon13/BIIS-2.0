@@ -331,27 +331,29 @@ async function gradebook(
   }
 }
 
-async function publishOffering(
-  offeringId,
-  teacherId
-) {
-  const result = await db.query(
-    `UPDATE results r
-        SET published_at =
-          CURRENT_TIMESTAMP
-       FROM exams e,
-            offered_courses oc
-      WHERE r.exam_id = e.exam_id
-        AND e.offered_course_id =
-            oc.offered_course_id
-        AND oc.offered_course_id = $1
-        AND oc.teacher_id = $2
-      RETURNING r.result_id`,
-    [offeringId, teacherId]
-  )
+async function publishOffering(offeringId, teacherId) {
+  const client = await db.pool.connect();
 
-  return {
-    publishedCount: result.rowCount,
+  try {
+    await client.query('BEGIN');
+
+    const result = await client.query(
+      `CALL publish_offering_results(
+        $1::bigint, $2::bigint, NULL::integer
+      )`,
+      [offeringId, teacherId]
+    );
+
+    await client.query('COMMIT');
+
+    return {
+      publishedCount: Number(result.rows[0].p_published_count),
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
 }
 

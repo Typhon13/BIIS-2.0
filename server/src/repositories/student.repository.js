@@ -539,6 +539,7 @@ async function listPublishedResults(
         r.marks_obtained,
         r.grade,
         r.published_at,
+        student_published_percentage($1::bigint) AS overall_percentage,
         e.exam_id,
         e.exam_type,
         e.exam_date,
@@ -575,6 +576,9 @@ async function listPublishedResults(
     marks: Number(row.marks_obtained),
     grade: row.grade,
     publishedAt: row.published_at,
+    overallPercentage: row.overall_percentage === null
+  ? null
+  : Number(row.overall_percentage),
 
     exam: {
       examId: String(row.exam_id),
