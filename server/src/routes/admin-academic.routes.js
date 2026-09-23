@@ -16,6 +16,7 @@ const {
   handleAcademicValidation,
   departmentRules,
   courseRules,
+  courseIdRules,
   termRules,
   offeringRules,
   assignmentRules,
@@ -66,6 +67,14 @@ router.post(
   courseRules(),
   handleAcademicValidation,
   controller.createCourse
+)
+
+router.patch(
+  '/academic/courses/:courseId',
+  ...adminOnly,
+  courseIdRules(),
+  handleAcademicValidation,
+  controller.updateCourse
 )
 
 router.get(

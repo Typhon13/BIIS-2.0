@@ -357,6 +357,17 @@ export const adminApi = {
       }
     )
   },
+
+  updateStudent(accessToken, studentId, student) {
+    return authorized(
+      `/admin/students/${studentId}`,
+      accessToken,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(student),
+      }
+    )
+  },
 }
 
 export const academicApi = {
@@ -394,6 +405,17 @@ export const academicApi = {
       accessToken,
       {
         method: 'POST',
+        body: JSON.stringify(course),
+      }
+    )
+  },
+
+  updateCourse(accessToken, courseId, course) {
+    return authorized(
+      `/admin/academic/courses/${courseId}`,
+      accessToken,
+      {
+        method: 'PATCH',
         body: JSON.stringify(course),
       }
     )

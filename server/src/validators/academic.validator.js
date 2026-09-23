@@ -130,6 +130,11 @@ const courseRules = () => [
     }),
 ];
 
+const courseIdRules = () => [
+  idParam('courseId'),
+  ...courseRules(),
+];
+
 const termRules = () => [
   allowedFields([
     'name',
@@ -226,6 +231,7 @@ module.exports = {
   handleAcademicValidation,
   departmentRules,
   courseRules,
+  courseIdRules,
   termRules,
   offeringRules,
   assignmentRules,

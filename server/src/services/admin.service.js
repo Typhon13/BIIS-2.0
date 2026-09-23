@@ -212,6 +212,28 @@ async function createStudent(input) {
   return adminRepository.createStudent({ ...normalized, passwordHash });
 }
 
+async function updateStudent(studentIdValue, input) {
+  if (!/^[1-9]\d*$/.test(String(studentIdValue))) throw new Error('INVALID_STUDENT_INPUT');
+  const normalized = {
+    username: String(input.username || '').trim(),
+    email: String(input.email || '').trim().toLowerCase(),
+    studentIdNumber: String(input.studentIdNumber || '').trim(),
+    name: String(input.name || '').trim(),
+    deptId: input.deptId ? String(input.deptId).trim() : '',
+    batchId: input.batchId ? String(input.batchId).trim() : '',
+    adviserId: input.adviserId ? String(input.adviserId).trim() : '',
+    phone: String(input.phone || '').trim(),
+    currentLevelTerm: String(input.currentLevelTerm || '').trim(),
+  };
+  if (!/^[a-zA-Z0-9_.-]{3,80}$/.test(normalized.username) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized.email) || !normalized.name || !normalized.studentIdNumber) throw new Error('INVALID_STUDENT_INPUT');
+  if (normalized.deptId && !/^[1-9]\d*$/.test(normalized.deptId)) throw new Error('INVALID_STUDENT_REFERENCE');
+  if (normalized.batchId && !/^[1-9]\d*$/.test(normalized.batchId)) throw new Error('INVALID_STUDENT_REFERENCE');
+  if (normalized.adviserId && !/^[1-9]\d*$/.test(normalized.adviserId)) throw new Error('INVALID_STUDENT_REFERENCE');
+  if (normalized.phone.length > 30 || normalized.currentLevelTerm.length > 30) throw new Error('INVALID_STUDENT_INPUT');
+  const passwordHash = input.password ? await passwordUtils.hashPassword(input.password) : null;
+  return adminRepository.updateStudent(studentIdValue, { ...normalized, passwordHash });
+}
+
 async function createDepartment({ deptName, deptShortName }) {
   const name = normalizeDepartmentName(deptName, 'name');
   const shortName = normalizeDepartmentName(deptShortName, 'short');
@@ -263,6 +285,7 @@ module.exports = {
   createTeacher,
   listStudents,
   createStudent,
+  updateStudent,
   createDepartment,
   updateDepartment,
   STATUSES,

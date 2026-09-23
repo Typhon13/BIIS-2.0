@@ -2,7 +2,7 @@ const express = require('express');
 const adminController = require('../controllers/admin.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorizeRoles } = require('../middleware/authorize.middleware');
-const { listRules, userIdRules, departmentIdRules, departmentListRules, teacherListRules, createTeacherRules, studentListRules, createStudentRules, statusRules, roleRules, createDepartmentRules, updateDepartmentRules, handleAdminValidation } = require('../validators/admin.validator');
+const { listRules, userIdRules, departmentIdRules, departmentListRules, teacherListRules, createTeacherRules, studentListRules, createStudentRules, updateStudentRules, statusRules, roleRules, createDepartmentRules, updateDepartmentRules, handleAdminValidation } = require('../validators/admin.validator');
 
 const router = express.Router();
 const adminOnly = [authenticate, authorizeRoles('ADMIN')];
@@ -19,5 +19,6 @@ router.get('/teachers', ...adminOnly, teacherListRules(), handleAdminValidation,
 router.post('/teachers', ...adminOnly, createTeacherRules(), handleAdminValidation, adminController.createTeacher);
 router.get('/students', ...adminOnly, studentListRules(), handleAdminValidation, adminController.listStudents);
 router.post('/students', ...adminOnly, createStudentRules(), handleAdminValidation, adminController.createStudent);
+router.patch('/students/:studentId', ...adminOnly, updateStudentRules(), handleAdminValidation, adminController.updateStudent);
 
 module.exports = router;

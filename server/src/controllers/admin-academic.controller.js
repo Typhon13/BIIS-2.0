@@ -40,6 +40,7 @@ const listDepartments = action(() => academicService.listDepartments());
 const createDepartment = action((req) => academicService.createDepartment(req.body), 201);
 const listCourses = action(() => academicService.listCourses());
 const createCourse = action((req) => academicService.createCourse(req.body), 201);
+const updateCourse = action((req) => academicService.updateCourse(req.params.courseId, req.body));
 const listTerms = action(() => academicService.listTerms());
 const createTerm = action((req) => academicService.createTerm(req.body), 201);
 const listTeachers = action(() => academicService.listTeachers());
@@ -52,6 +53,7 @@ module.exports = {
   createDepartment,
   listCourses,
   createCourse,
+  updateCourse,
   listTerms,
   createTerm,
   listTeachers,

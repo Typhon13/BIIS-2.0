@@ -131,6 +131,9 @@ function AdminAcademic({
   const [courses, setCourses] =
     useState([])
 
+  const [editingCourseId, setEditingCourseId] =
+    useState('')
+
   const [terms, setTerms] =
     useState([])
 
@@ -162,6 +165,30 @@ function AdminAcademic({
     code: '',
   })
 
+  function editCourse(course) {
+    setEditingCourseId(course.courseId)
+    setCourseForm({
+      code: course.code,
+      title: course.title,
+      credit: String(course.credit),
+      type: course.type,
+      totalMarks: String(course.totalMarks),
+      departmentId: course.department?.departmentId || '',
+    })
+  }
+
+  function cancelCourseEdit() {
+    setEditingCourseId('')
+    setCourseForm({
+      code: '',
+      title: '',
+      credit: '3',
+      type: 'THEORY',
+      totalMarks: '300',
+      departmentId: '',
+    })
+  }
+
   const [
     courseForm,
     setCourseForm,
@@ -191,6 +218,7 @@ function AdminAcademic({
   ] = useState({
     courseId: '',
     termId: '',
+    teacherId: '',
     section: '',
     seatCapacity: '30',
   })
@@ -431,35 +459,27 @@ function AdminAcademic({
         onSubmit={(event) => {
           event.preventDefault()
 
+          const course = {
+            ...courseForm,
+            credit: Number(courseForm.credit),
+            totalMarks: Number(courseForm.totalMarks),
+          }
+
           submit(
-            () =>
-              academicApi.createCourse(
-                accessToken,
-                {
-                  ...courseForm,
-
-                  credit: Number(
-                    courseForm.credit
-                  ),
-
-                  totalMarks: Number(
-                    courseForm
-                      .totalMarks
-                  ),
-                }
-              ),
-
-            'Course created.',
-
-            () =>
-              setCourseForm({
-                code: '',
-                title: '',
-                credit: '3',
-                type: 'THEORY',
-                totalMarks: '300',
-                departmentId: '',
-              })
+            () => editingCourseId
+              ? academicApi.updateCourse(
+                  accessToken,
+                  editingCourseId,
+                  course
+                )
+              : academicApi.createCourse(
+                  accessToken,
+                  course
+                ),
+            editingCourseId
+              ? 'Course updated.'
+              : 'Course created.',
+            cancelCourseEdit
           )
         }}
       >
@@ -612,8 +632,20 @@ function AdminAcademic({
           type="submit"
           disabled={submitting}
         >
-          Create course
+          {editingCourseId
+            ? 'Save course'
+            : 'Create course'}
         </button>
+
+        {editingCourseId && (
+          <button
+            type="button"
+            onClick={cancelCourseEdit}
+            disabled={submitting}
+          >
+            Cancel edit
+          </button>
+        )}
       </form>
 
       {!courses.length ? (
@@ -629,6 +661,7 @@ function AdminAcademic({
                 <th>Credits</th>
                 <th>Total marks</th>
                 <th>Department</th>
+                <th>Actions</th>
               </tr>
             </thead>
 
@@ -649,6 +682,16 @@ function AdminAcademic({
                   <td>
                     {course.department
                       ?.code || '—'}
+                  </td>
+
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => editCourse(course)}
+                      disabled={submitting}
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -880,6 +923,10 @@ function AdminAcademic({
                   {
                     ...offeringForm,
 
+                    teacherId:
+                      offeringForm.teacherId ||
+                      undefined,
+
                     seatCapacity:
                       Number(
                         offeringForm
@@ -894,6 +941,7 @@ function AdminAcademic({
               setOfferingForm({
                 courseId: '',
                 termId: '',
+                teacherId: '',
                 section: '',
                 seatCapacity: '30',
               })
@@ -959,6 +1007,34 @@ function AdminAcademic({
               >
                 {term.name}{' '}
                 {term.academicYear}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Teacher (optional)
+
+          <select
+            name="teacherId"
+            value={offeringForm.teacherId}
+            onChange={(event) =>
+              updateForm(
+                setOfferingForm,
+                event
+              )
+            }
+          >
+            <option value="">
+              Assign later
+            </option>
+
+            {teachers.map((teacher) => (
+              <option
+                key={teacher.teacherId}
+                value={teacher.teacherId}
+              >
+                {teacher.name}
               </option>
             ))}
           </select>

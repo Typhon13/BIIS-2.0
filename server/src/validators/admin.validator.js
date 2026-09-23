@@ -225,6 +225,27 @@ const createStudentRules = () => [
   ...rejectUnexpected(accountCreationForbiddenFields),
 ];
 
+const updateStudentRules = () => [
+  param('studentId').matches(/^[1-9]\d*$/),
+  body().custom((value) => {
+    const allowed = ['username', 'email', 'studentIdNumber', 'name', 'deptId', 'batchId', 'adviserId', 'phone', 'currentLevelTerm', 'password', 'confirmPassword'];
+    const unexpected = Object.keys(value || {}).find((field) => !allowed.includes(field));
+    if (unexpected) throw new Error(`${unexpected} is not allowed`);
+    return true;
+  }),
+  body('username').trim().matches(/^[a-zA-Z0-9_.-]{3,80}$/),
+  body('email').trim().isEmail(),
+  body('studentIdNumber').trim().isLength({ min: 1, max: 50 }),
+  body('name').trim().isLength({ min: 2, max: 150 }),
+  body('deptId').optional({ nullable: true, checkFalsy: true }).matches(/^[1-9]\d*$/),
+  body('batchId').optional({ nullable: true, checkFalsy: true }).matches(/^[1-9]\d*$/),
+  body('adviserId').optional({ nullable: true, checkFalsy: true }).matches(/^[1-9]\d*$/),
+  body('phone').optional({ nullable: true }).isString().isLength({ max: 30 }),
+  body('currentLevelTerm').optional({ nullable: true }).isString().isLength({ max: 30 }),
+  body('password').optional({ nullable: true, checkFalsy: true }).isString().isLength({ min: 8 }).matches(/[a-z]/).matches(/[A-Z]/).matches(/\d/),
+  body('confirmPassword').custom((value, { req }) => !req.body.password || value === req.body.password).withMessage('Passwords do not match'),
+];
+
 const statusRules = () => [
   ...userIdRules(),
 
@@ -296,6 +317,7 @@ module.exports = {
   createTeacherRules,
   studentListRules,
   createStudentRules,
+  updateStudentRules,
   statusRules,
   roleRules,
   createDepartmentRules,

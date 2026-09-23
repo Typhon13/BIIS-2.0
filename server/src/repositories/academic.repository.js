@@ -206,6 +206,41 @@ async function findCourse(courseId) {
   return result.rows[0] || null;
 }
 
+async function updateCourse(courseId, { code, title, credit, type, totalMarks, departmentId }) {
+  try {
+    const result = await db.query(
+      `UPDATE courses
+          SET course_code = $1,
+              course_title = $2,
+              credit = $3,
+              course_type = $4,
+              total_marks = $5,
+              dept_id = $6
+        WHERE course_id = $7
+        RETURNING course_id`,
+      [code, title, credit, type, totalMarks, departmentId, courseId],
+    );
+
+    if (!result.rows[0]) return null;
+
+    const updated = await db.query(
+      `SELECT c.course_id, c.course_code, c.course_title, c.credit,
+              c.course_type, c.total_marks, d.dept_id, d.dept_name,
+              d.dept_short_name
+         FROM courses c
+         JOIN departments d ON d.dept_id = c.dept_id
+        WHERE c.course_id = $1`,
+      [courseId],
+    );
+
+    return mapCourse(updated.rows[0]);
+  } catch (error) {
+    if (error.code === '23505') throw new Error('DUPLICATE_COURSE');
+    if (error.code === '23503') throw new Error('DEPARTMENT_NOT_FOUND');
+    throw error;
+  }
+}
+
 async function listTerms() {
   const result = await db.query(
     `SELECT
@@ -463,6 +498,7 @@ module.exports = {
 
   listCourses,
   createCourse,
+  updateCourse,
   findCourse,
 
   listTerms,

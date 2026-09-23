@@ -22,6 +22,7 @@ function AdminStudentManagement() {
   const [filters, setFilters] = useState({ search: '', deptId: '', page: 1, limit: 10 })
   const [searchInput, setSearchInput] = useState('')
   const [form, setForm] = useState(emptyForm)
+  const [editingStudentId, setEditingStudentId] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState('')
@@ -63,9 +64,12 @@ function AdminStudentManagement() {
     setError('')
     setMessage('')
     try {
-      const response = await adminApi.createStudent(accessToken, form)
+      const response = editingStudentId
+        ? await adminApi.updateStudent(accessToken, editingStudentId, form)
+        : await adminApi.createStudent(accessToken, form)
       setForm(emptyForm)
-      setMessage(`Student ${response.data.student.name} was created successfully.`)
+      setEditingStudentId('')
+      setMessage(`Student ${response.data.student.name} was ${editingStudentId ? 'updated' : 'created'} successfully.`)
       setFilters((current) => ({ ...current, page: 1 }))
       await loadStudents()
     } catch (requestError) {
@@ -73,6 +77,30 @@ function AdminStudentManagement() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  function editStudent(student) {
+    setEditingStudentId(student.studentId)
+    setForm({
+      username: student.username,
+      email: student.email,
+      studentIdNumber: student.studentIdNumber,
+      name: student.name,
+      deptId: student.departmentId || '',
+      batchId: student.batchId || '',
+      adviserId: student.adviserId || '',
+      phone: student.phone || '',
+      currentLevelTerm: student.currentLevelTerm || '',
+      password: '',
+      confirmPassword: '',
+    })
+    setError('')
+    setMessage('')
+  }
+
+  function cancelEdit() {
+    setEditingStudentId('')
+    setForm(emptyForm)
   }
 
   function handleSearch(event) {
@@ -105,14 +133,14 @@ function AdminStudentManagement() {
         <div className="admin-filter-field"><label htmlFor="new-student-id">Student ID number</label><input id="new-student-id" value={form.studentIdNumber} onChange={(event) => updateForm('studentIdNumber', event.target.value)} required /></div>
         <div className="admin-filter-field"><label htmlFor="new-student-username">Username</label><input id="new-student-username" value={form.username} onChange={(event) => updateForm('username', event.target.value)} required /></div>
         <div className="admin-filter-field"><label htmlFor="new-student-email">Email</label><input id="new-student-email" type="email" value={form.email} onChange={(event) => updateForm('email', event.target.value)} required /></div>
-        <div className="admin-filter-field"><label htmlFor="new-student-department">Department</label><select id="new-student-department" value={form.deptId} onChange={(event) => updateForm('deptId', event.target.value)} required><option value="">Select department</option>{departments.map((department) => <option key={department.deptId} value={department.deptId}>{department.deptShortName} - {department.deptName}</option>)}</select></div>
-        <div className="admin-filter-field"><label htmlFor="new-student-batch">Batch ID</label><input id="new-student-batch" type="number" min="1" value={form.batchId} onChange={(event) => updateForm('batchId', event.target.value)} placeholder="Existing batch ID" required /></div>
+        <div className="admin-filter-field"><label htmlFor="new-student-department">Department</label><select id="new-student-department" value={form.deptId} onChange={(event) => updateForm('deptId', event.target.value)} required={!editingStudentId}><option value="">{editingStudentId ? 'Not assigned' : 'Select department'}</option>{departments.map((department) => <option key={department.deptId} value={department.deptId}>{department.deptShortName} - {department.deptName}</option>)}</select></div>
+        <div className="admin-filter-field"><label htmlFor="new-student-batch">Batch ID</label><input id="new-student-batch" type="number" min="1" value={form.batchId} onChange={(event) => updateForm('batchId', event.target.value)} placeholder="Existing batch ID" required={!editingStudentId} /></div>
         <div className="admin-filter-field"><label htmlFor="new-student-adviser">Adviser ID</label><input id="new-student-adviser" type="number" min="1" value={form.adviserId} onChange={(event) => updateForm('adviserId', event.target.value)} placeholder="Optional teacher ID" /></div>
         <div className="admin-filter-field"><label htmlFor="new-student-level">Level / term</label><input id="new-student-level" value={form.currentLevelTerm} onChange={(event) => updateForm('currentLevelTerm', event.target.value)} placeholder="Level 1 / Term 1" /></div>
         <div className="admin-filter-field"><label htmlFor="new-student-phone">Phone</label><input id="new-student-phone" value={form.phone} onChange={(event) => updateForm('phone', event.target.value)} /></div>
-        <div className="admin-filter-field"><label htmlFor="new-student-password">Initial password</label><input id="new-student-password" type="password" value={form.password} onChange={(event) => updateForm('password', event.target.value)} required /></div>
-        <div className="admin-filter-field"><label htmlFor="new-student-confirm-password">Confirm password</label><input id="new-student-confirm-password" type="password" value={form.confirmPassword} onChange={(event) => updateForm('confirmPassword', event.target.value)} required /></div>
-        <div className="admin-filter-actions"><button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Add Student'}</button></div>
+        <div className="admin-filter-field"><label htmlFor="new-student-password">{editingStudentId ? 'New password (optional)' : 'Initial password'}</label><input id="new-student-password" type="password" value={form.password} onChange={(event) => updateForm('password', event.target.value)} required={!editingStudentId} /></div>
+        <div className="admin-filter-field"><label htmlFor="new-student-confirm-password">Confirm password</label><input id="new-student-confirm-password" type="password" value={form.confirmPassword} onChange={(event) => updateForm('confirmPassword', event.target.value)} required={Boolean(form.password)} /></div>
+        <div className="admin-filter-actions"><button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : editingStudentId ? 'Save Student' : 'Add Student'}</button>{editingStudentId && <button type="button" onClick={cancelEdit} disabled={isSubmitting}>Cancel Edit</button>}</div>
       </form>
 
       <form className="admin-user-filters" onSubmit={handleSearch}>
@@ -122,8 +150,8 @@ function AdminStudentManagement() {
       </form>
 
       <div className="admin-user-summary"><strong>{pagination.total}</strong><span>student{pagination.total === 1 ? '' : 's'} found</span></div>
-      <div className="admin-table-wrapper"><table className="admin-users-table"><thead><tr><th>Student ID</th><th>Name</th><th>Account</th><th>Department</th><th>Batch</th><th>Level / Term</th><th>Adviser</th><th>Status</th></tr></thead><tbody>
-        {isLoading ? <tr><td colSpan="8" className="admin-table-message">Loading students...</td></tr> : students.length === 0 ? <tr><td colSpan="8" className="admin-table-message">No students matched the selected filters.</td></tr> : students.map((student) => <tr key={student.studentId}><td><strong>{student.studentIdNumber}</strong><small>#{student.studentId}</small></td><td>{student.name}</td><td><strong>{student.username}</strong><small>{student.email}</small></td><td><strong>{student.departmentShortName}</strong><small>{student.departmentName}</small></td><td>#{student.batchId} {student.batchName}</td><td>{student.currentLevelTerm || 'Not specified'}</td><td>{student.adviserName || 'Unassigned'}</td><td><span className={`admin-status-badge ${student.accountStatus === 'ACTIVE' ? 'admin-status-active' : 'admin-status-inactive'}`}>{student.accountStatus}</span></td></tr>)}
+      <div className="admin-table-wrapper"><table className="admin-users-table"><thead><tr><th>Student ID</th><th>Name</th><th>Account</th><th>Department</th><th>Batch</th><th>Level / Term</th><th>Adviser</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+        {isLoading ? <tr><td colSpan="9" className="admin-table-message">Loading students...</td></tr> : students.length === 0 ? <tr><td colSpan="9" className="admin-table-message">No students matched the selected filters.</td></tr> : students.map((student) => <tr key={student.studentId}><td><strong>{student.studentIdNumber}</strong><small>#{student.studentId}</small></td><td>{student.name}</td><td><strong>{student.username}</strong><small>{student.email}</small></td><td><strong>{student.departmentShortName || 'Not assigned'}</strong><small>{student.departmentName || ''}</small></td><td>{student.batchId ? `#${student.batchId} ${student.batchName || ''}` : 'Not assigned'}</td><td>{student.currentLevelTerm || 'Not specified'}</td><td>{student.adviserName || 'Unassigned'}</td><td><span className={`admin-status-badge ${student.accountStatus === 'ACTIVE' ? 'admin-status-active' : 'admin-status-inactive'}`}>{student.accountStatus}</span></td><td><button type="button" onClick={() => editStudent(student)} disabled={isSubmitting}>Edit</button></td></tr>)}
       </tbody></table></div>
       <div className="admin-pagination"><button type="button" disabled={isLoading || pagination.page <= 1} onClick={() => setFilters((current) => ({ ...current, page: current.page - 1 }))}>Previous</button><span>Page <strong>{pagination.page}</strong> of <strong>{Math.max(pagination.totalPages, 1)}</strong></span><button type="button" disabled={isLoading || pagination.totalPages === 0 || pagination.page >= pagination.totalPages} onClick={() => setFilters((current) => ({ ...current, page: current.page + 1 }))}>Next</button></div>
     </section>

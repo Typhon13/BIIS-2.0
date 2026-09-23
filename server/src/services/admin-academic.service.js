@@ -136,6 +136,39 @@ async function createCourse(body) {
   });
 }
 
+async function updateCourse(courseIdValue, body) {
+  const courseId = positiveId(courseIdValue, 'INVALID_ID');
+  const existing = await academicRepository.findCourse(courseId);
+
+  if (!existing) throw new Error('COURSE_NOT_FOUND');
+
+  const departmentId = positiveId(String(body.departmentId || ''), 'INVALID_COURSE');
+  const department = await academicRepository.findDepartment(departmentId);
+  if (!department) throw new Error('DEPARTMENT_NOT_FOUND');
+
+  const credit = Number(body.credit);
+  const totalMarks = Number(body.totalMarks);
+  const type = String(body.type || '').trim().toUpperCase();
+
+  if (!Number.isFinite(credit) || credit <= 0 || credit > 99.99 ||
+      !Number.isFinite(totalMarks) || totalMarks <= 0 || totalMarks > 99999.99 ||
+      !['THEORY', 'SESSIONAL'].includes(type)) {
+    throw new Error('INVALID_COURSE');
+  }
+
+  const updated = await academicRepository.updateCourse(courseId, {
+    code: text(body.code, 'INVALID_COURSE', 1, 30).toUpperCase(),
+    title: text(body.title, 'INVALID_COURSE', 1, 200),
+    credit,
+    type,
+    totalMarks,
+    departmentId,
+  });
+
+  if (!updated) throw new Error('COURSE_NOT_FOUND');
+  return updated;
+}
+
 async function listTerms() {
   return academicRepository.listTerms();
 }
@@ -305,6 +338,7 @@ module.exports = {
 
   listCourses,
   createCourse,
+  updateCourse,
 
   listTerms,
   createTerm,

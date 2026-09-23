@@ -50,5 +50,6 @@ async function listTeachers(req, res) { try { return res.json({ success: true, d
 async function createTeacher(req, res) { try { const teacher = await adminService.createTeacher(req.body); return res.status(201).json({ success: true, data: { teacher } }); } catch (error) { return errorResponse(error, res); } }
 async function listStudents(req, res) { try { return res.json({ success: true, data: await adminService.listStudents(req.query) }); } catch (error) { return errorResponse(error, res); } }
 async function createStudent(req, res) { try { const student = await adminService.createStudent(req.body); return res.status(201).json({ success: true, data: { student } }); } catch (error) { return errorResponse(error, res); } }
+async function updateStudent(req, res) { try { const student = await adminService.updateStudent(req.params.studentId, req.body); if (!student) return res.status(404).json({ success: false, message: 'Student not found' }); return res.json({ success: true, data: { student } }); } catch (error) { return errorResponse(error, res); } }
 
-module.exports = { list, getOne, updateStatus, updateRole, listDepartments, getDepartment, createDepartment, updateDepartment, listTeachers, createTeacher, listStudents, createStudent };
+module.exports = { list, getOne, updateStatus, updateRole, listDepartments, getDepartment, createDepartment, updateDepartment, listTeachers, createTeacher, listStudents, createStudent, updateStudent };

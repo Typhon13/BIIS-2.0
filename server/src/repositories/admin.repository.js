@@ -685,6 +685,70 @@ async function createStudent({ username, email, passwordHash, studentIdNumber, n
   } finally { client.release(); }
 }
 
+async function updateStudent(studentId, { username, email, studentIdNumber, name, deptId, batchId, adviserId, phone, currentLevelTerm, passwordHash }) {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const existing = await client.query('SELECT user_id FROM students WHERE student_id = $1 FOR UPDATE', [studentId]);
+    if (!existing.rows[0]) return null;
+
+    if (batchId) {
+      const batch = await client.query(
+        `SELECT b.batch_id, p.dept_id
+           FROM batches b JOIN programs p ON p.program_id = b.program_id
+          WHERE b.batch_id = $1`,
+        [batchId],
+      );
+      if (!batch.rows[0]) throw new Error('BATCH_NOT_FOUND');
+      if (String(batch.rows[0].dept_id) !== String(deptId)) throw new Error('BATCH_DEPARTMENT_MISMATCH');
+    }
+
+    if (adviserId) {
+      const adviser = await client.query('SELECT teacher_id FROM teachers WHERE teacher_id = $1 AND dept_id = $2', [adviserId, deptId]);
+      if (!adviser.rows[0]) throw new Error('ADVISER_NOT_FOUND');
+    }
+
+    await client.query(
+      `UPDATE users
+          SET username = $1, email = $2
+              ${passwordHash ? ', password_hash = $3' : ''}
+        WHERE user_id = $${passwordHash ? 4 : 3}`,
+      passwordHash ? [username, email, passwordHash, existing.rows[0].user_id] : [username, email, existing.rows[0].user_id],
+    );
+
+    await client.query(
+      `UPDATE students
+          SET student_id_number = $1, name = $2, dept_id = $3, batch_id = $4,
+              adviser_id = $5, phone = $6, current_level_term = $7
+        WHERE student_id = $8`,
+      [studentIdNumber, name, deptId || null, batchId || null, adviserId || null, phone || null, currentLevelTerm || null, studentId],
+    );
+
+    const result = await client.query(
+      `SELECT s.student_id, s.user_id, s.student_id_number, s.name, s.dept_id, s.batch_id,
+              s.adviser_id, s.phone, s.current_level_term, u.username, u.email,
+              u.account_status, d.dept_name, d.dept_short_name, b.batch_name,
+              t.name AS adviser_name
+         FROM students s JOIN users u ON u.user_id = s.user_id
+         LEFT JOIN departments d ON d.dept_id = s.dept_id
+         LEFT JOIN batches b ON b.batch_id = s.batch_id
+         LEFT JOIN teachers t ON t.teacher_id = s.adviser_id
+        WHERE s.student_id = $1`,
+      [studentId],
+    );
+
+    await client.query('COMMIT');
+    return mapStudent(result.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (['BATCH_NOT_FOUND', 'BATCH_DEPARTMENT_MISMATCH', 'ADVISER_NOT_FOUND'].includes(error.message)) throw error;
+    if (error.code === '23505') throw new Error('DUPLICATE_STUDENT');
+    throw new Error('STUDENT_UPDATE_FAILED');
+  } finally {
+    client.release();
+  }
+}
+
 async function createDepartment({ deptName, deptShortName }) {
   const result = await db.query(
     `
@@ -786,6 +850,7 @@ module.exports = {
   createTeacher,
   listStudents,
   createStudent,
+  updateStudent,
   createDepartment,
   updateDepartment,
 };
