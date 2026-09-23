@@ -2013,8 +2013,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .portal-group-button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 12px 12px; border: 0; border-radius: 6px; color: #fff; background: transparent; cursor: pointer; text-align: left; font-size: 12px; font-weight: 800; letter-spacing: .09em; }
 .portal-group-button:hover, .portal-group-button:focus-visible { background: rgb(255 255 255 / 11%); }
 .portal-submenu { display: grid; gap: 3px; padding: 4px 0 8px; }
-.portal-submenu button { width: 100%; padding: 10px 12px 10px 28px; border: 0; border-left: 3px solid transparent; border-radius: 0 5px 5px 0; color: #f8ebe7; background: transparent; cursor: pointer; text-align: left; font-size: 14px; }
-.portal-submenu button:hover, .portal-submenu button.active { border-left-color: #f4c7a9; color: #fff; background: rgb(255 255 255 / 15%); }
+.portal-submenu button, .portal-submenu .portal-menu-link { width: 100%; padding: 10px 12px 10px 28px; border: 0; border-left: 3px solid transparent; border-radius: 0 5px 5px 0; color: #f8ebe7; background: transparent; cursor: pointer; text-align: left; font-size: 14px; }
+.portal-submenu button:hover, .portal-submenu button.active, .portal-submenu .portal-menu-link:hover { border-left-color: #f4c7a9; color: #fff; background: rgb(255 255 255 / 15%); }
 .portal-submenu button.active { font-weight: 800; }
 .sidebar-caption { margin: 24px 8px 0; padding: 14px 10px; border-top: 1px solid rgb(255 255 255 / 18%); color: #e7c9c2; font-size: 12px; line-height: 1.5; }
 .sidebar-caption strong { color: #fff; }

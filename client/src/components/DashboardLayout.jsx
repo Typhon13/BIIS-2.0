@@ -57,16 +57,28 @@ function DashboardLayout({
                   {isExpanded && (
                     <div className="portal-submenu">
                       {group.items.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          className={
-                            activeItem === item ? 'active' : ''
-                          }
-                          onClick={() => onSelect(item)}
-                        >
-                          {item}
-                        </button>
+                        item === 'Academic Calendar' ? (
+                          <a
+                            key={item}
+                            className="portal-menu-link"
+                            href="https://www.buet.ac.bd/web/#/academics/1"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {item}
+                          </a>
+                        ) : (
+                          <button
+                            key={item}
+                            type="button"
+                            className={
+                              activeItem === item ? 'active' : ''
+                            }
+                            onClick={() => onSelect(item)}
+                          >
+                            {item}
+                          </button>
+                        )
                       ))}
                     </div>
                   )}

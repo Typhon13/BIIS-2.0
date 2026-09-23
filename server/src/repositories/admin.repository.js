@@ -32,7 +32,7 @@ function mapTeacher(row) {
     username: row.username,
     email: row.email,
     designation: row.designation,
-    departmentId: String(row.dept_id),
+    departmentId: row.dept_id === null || row.dept_id === undefined ? null : String(row.dept_id),
     departmentName: row.dept_name,
     departmentShortName: row.dept_short_name,
     phone: row.phone,
@@ -49,10 +49,10 @@ function mapStudent(row) {
     name: row.name,
     username: row.username,
     email: row.email,
-    departmentId: String(row.dept_id),
+    departmentId: row.dept_id === null || row.dept_id === undefined ? null : String(row.dept_id),
     departmentName: row.dept_name,
     departmentShortName: row.dept_short_name,
-    batchId: String(row.batch_id),
+    batchId: row.batch_id === null || row.batch_id === undefined ? null : String(row.batch_id),
     batchName: row.batch_name,
     adviserId: row.adviser_id ? String(row.adviser_id) : null,
     adviserName: row.adviser_name || null,
@@ -621,17 +621,17 @@ async function listStudents({ page, limit, search, deptId }) {
     filters.push(`s.dept_id = $${values.length}`);
   }
   const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
-  const countResult = await db.query(`SELECT COUNT(*)::int AS count FROM students s JOIN users u ON u.user_id = s.user_id JOIN departments d ON d.dept_id = s.dept_id ${whereClause}`, values);
+  const countResult = await db.query(`SELECT COUNT(*)::int AS count FROM students s JOIN users u ON u.user_id = s.user_id LEFT JOIN departments d ON d.dept_id = s.dept_id ${whereClause}`, values);
   const total = countResult.rows[0].count;
   const offset = (page - 1) * limit;
   const listValues = [...values, limit, offset];
   const result = await db.query(
     `SELECT s.student_id, s.user_id, s.student_id_number, s.name, s.dept_id, s.batch_id, s.adviser_id, s.phone, s.current_level_term,
             u.username, u.email, u.account_status, d.dept_name, d.dept_short_name, b.batch_name, t.name AS adviser_name
-       FROM students s
-       JOIN users u ON u.user_id = s.user_id
-       JOIN departments d ON d.dept_id = s.dept_id
-       JOIN batches b ON b.batch_id = s.batch_id
+      FROM students s
+      JOIN users u ON u.user_id = s.user_id
+      LEFT JOIN departments d ON d.dept_id = s.dept_id
+      LEFT JOIN batches b ON b.batch_id = s.batch_id
        LEFT JOIN teachers t ON t.teacher_id = s.adviser_id
        ${whereClause}
       ORDER BY s.student_id ASC
