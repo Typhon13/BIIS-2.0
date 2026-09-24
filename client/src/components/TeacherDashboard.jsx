@@ -475,8 +475,10 @@ export default function TeacherDashboard({
             value={item.offeringId}
           >
             {item.course.code} —{' '}
-            {item.course.title},
-            Section {item.section}
+            {item.course.title}
+            {item.course.type === 'SESSIONAL'
+              ? ''
+              : `, Section ${item.section || '—'}`}
           </option>
         ))}
       </select>
@@ -564,8 +566,9 @@ export default function TeacherDashboard({
                     item.term
                       .academicYear
                   }{' '}
-                  · Section{' '}
-                  {item.section}
+                  {item.course.type === 'SESSIONAL'
+                    ? '· No section'
+                    : `· Section ${item.section || '—'}`}
                 </small>
 
                 <b>

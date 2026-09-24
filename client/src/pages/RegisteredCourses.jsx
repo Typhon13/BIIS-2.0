@@ -11,11 +11,15 @@ function remarksFor(item) {
   }
 
   if (status === 'PENDING') {
-    return '(pending)'
+    return item.approvalRemarks
+      ? `(pending) ${item.approvalRemarks}`
+      : '(pending)'
   }
 
   if (status === 'REJECTED') {
-    return '(rejected)'
+    return item.approvalRemarks
+      ? `(rejected) ${item.approvalRemarks}`
+      : '(rejected)'
   }
 
   if (item.status === 'PENDING') {
@@ -67,17 +71,16 @@ export default function RegisteredCourses() {
   }, [accessToken])
 
   const visibleCourses = useMemo(
-    () =>
-      courses.filter((item) =>
-        ['PENDING', 'ACTIVE'].includes(item.status)
-      ),
+    () => courses,
     [courses]
   )
 
-  const totalCredits = visibleCourses.reduce(
-    (sum, item) => sum + Number(item.course.credit || 0),
-    0
-  )
+  const totalCredits = visibleCourses
+    .filter((item) => ['PENDING', 'ACTIVE'].includes(item.status))
+    .reduce(
+      (sum, item) => sum + Number(item.course.credit || 0),
+      0
+    )
 
   if (loading) {
     return <p className="biis-course-status">Loading registered courses...</p>

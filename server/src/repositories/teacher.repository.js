@@ -84,7 +84,12 @@ async function listAssignedOfferings(
 ) {
   const result = await db.query(
     `${offeringSelect}
-      WHERE oc.teacher_id = $1
+      WHERE EXISTS (
+        SELECT 1
+          FROM offering_teachers ot
+         WHERE ot.offered_course_id = oc.offered_course_id
+           AND ot.teacher_id = $1
+      )
       GROUP BY
         oc.offered_course_id,
         c.course_id,
@@ -106,7 +111,12 @@ async function findOwnedOffering(
   const result = await db.query(
     `${offeringSelect}
       WHERE oc.offered_course_id = $1
-        AND oc.teacher_id = $2
+        AND EXISTS (
+          SELECT 1
+            FROM offering_teachers ot
+           WHERE ot.offered_course_id = oc.offered_course_id
+             AND ot.teacher_id = $2
+        )
       GROUP BY
         oc.offered_course_id,
         c.course_id,
@@ -138,12 +148,15 @@ async function listEnrolledStudents(
      JOIN offered_courses oc
        ON oc.offered_course_id =
           r.offered_course_id
-     JOIN teachers t
-       ON t.teacher_id = oc.teacher_id
      JOIN semesters sp
        ON sp.semester_id = oc.semester_id
      WHERE r.offered_course_id = $1
-       AND t.teacher_id = $2
+       AND EXISTS (
+         SELECT 1
+           FROM offering_teachers ot
+          WHERE ot.offered_course_id = oc.offered_course_id
+            AND ot.teacher_id = $2
+       )
        AND r.status = 'ACTIVE'
      ORDER BY s.name ASC`,
     [offeringId, teacherId]
@@ -190,7 +203,12 @@ async function studentDetails(
            ON oc.offered_course_id =
               r.offered_course_id
          WHERE r.student_id = s.student_id
-           AND oc.teacher_id = $2
+           AND EXISTS (
+             SELECT 1
+               FROM offering_teachers ot
+              WHERE ot.offered_course_id = oc.offered_course_id
+                AND ot.teacher_id = $2
+           )
        )`,
     [studentId, teacherId]
   )
@@ -375,34 +393,47 @@ async function createNotice({
     )
   }
 
-  const result = await db.query(
-    `INSERT INTO notices (
-       title,
-       content,
-       posted_by_user_id,
-       target_audience
-     )
-     VALUES ($1, $2, $3, $4)
-     RETURNING
-       notice_id,
-       title,
-       content,
-       post_date`,
-    [
-      title,
-      content,
-      userId,
-      `OFFERING:${offeringId}`,
-    ]
-  )
+  const client = await db.pool.connect()
 
-  const row = result.rows[0]
+  try {
+    await client.query('BEGIN')
 
-  return {
-    noticeId: String(row.notice_id),
-    title: row.title,
-    content: row.content,
-    postedAt: row.post_date,
+    const result = await client.query(
+      `INSERT INTO notices (
+         title,
+         content,
+         posted_by_user_id,
+         target_audience
+       )
+       VALUES ($1, $2, $3, $4)
+       RETURNING
+         notice_id,
+         title,
+         content,
+         post_date`,
+      [
+        title,
+        content,
+        userId,
+        `OFFERING:${offeringId}`,
+      ]
+    )
+
+    await client.query('COMMIT')
+
+    const row = result.rows[0]
+
+    return {
+      noticeId: String(row.notice_id),
+      title: row.title,
+      content: row.content,
+      postedAt: row.post_date,
+    }
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
   }
 }
 
@@ -480,49 +511,95 @@ async function decideApproval(
   try {
     await client.query('BEGIN')
 
-    const approval = await client.query(
-      `UPDATE approvals
-          SET approval_status = $3,
-              remarks = $4,
-              approval_date =
-                CURRENT_TIMESTAMP
-        WHERE approval_id = $1
-          AND approver_teacher_id = $2
-          AND approval_status = 'PENDING'
-        RETURNING registration_id`,
-      [
-        approvalId,
-        teacherId,
-        status,
-        remarks || null,
-      ]
+    const locked = await client.query(
+      `SELECT
+         a.approval_id,
+         a.registration_id,
+         a.approval_status,
+         a.approver_teacher_id,
+         r.status AS registration_status,
+         s.student_id,
+         s.student_id_number,
+         s.name AS student_name,
+         c.course_code,
+         c.course_title,
+         oc.offered_course_id,
+         oc.seat_capacity
+       FROM approvals a
+       JOIN registrations r
+         ON r.registration_id = a.registration_id
+       JOIN students s
+         ON s.student_id = r.student_id
+       JOIN offered_courses oc
+         ON oc.offered_course_id = r.offered_course_id
+       JOIN courses c
+         ON c.course_id = oc.course_id
+      WHERE a.approval_id = $1
+        AND a.approver_teacher_id = $2
+        AND a.approval_type = 'COURSE_REGISTRATION'
+      FOR UPDATE OF a, r, oc`,
+      [approvalId, teacherId]
     )
 
-    if (!approval.rows[0]) {
-      throw new Error(
-        'APPROVAL_NOT_FOUND'
-      )
+    const row = locked.rows[0]
+
+    if (!row || row.approval_status !== 'PENDING') {
+      throw new Error('APPROVAL_NOT_FOUND')
     }
+
+    if (row.registration_status !== 'PENDING') {
+      throw new Error('APPROVAL_NOT_FOUND')
+    }
+
+    const registrationStatus =
+      status === 'APPROVED'
+        ? 'ACTIVE'
+        : 'DROPPED'
+
+    if (status === 'APPROVED') {
+      const activeCount = await client.query(
+        `SELECT COUNT(*)::int AS count
+           FROM registrations
+          WHERE offered_course_id = $1
+            AND status = 'ACTIVE'`,
+        [row.offered_course_id]
+      )
+
+      if (Number(activeCount.rows[0].count) >= Number(row.seat_capacity)) {
+        throw new Error('OFFERING_FULL')
+      }
+    }
+
+    await client.query(
+      `UPDATE approvals
+          SET approval_status = $2,
+              remarks = $3,
+              approval_date = CURRENT_TIMESTAMP
+        WHERE approval_id = $1`,
+      [approvalId, status, remarks || null]
+    )
 
     await client.query(
       `UPDATE registrations
           SET status = $2
         WHERE registration_id = $1`,
-      [
-        approval.rows[0]
-          .registration_id,
-        status === 'APPROVED'
-          ? 'ACTIVE'
-          : 'DROPPED',
-      ]
+      [row.registration_id, registrationStatus]
     )
 
     await client.query('COMMIT')
 
     return {
       approvalId: String(approvalId),
+      enrollmentId: String(row.registration_id),
+      studentId: String(row.student_id),
+      studentNumber: row.student_id_number,
+      studentName: row.student_name,
+      courseCode: row.course_code,
+      courseTitle: row.course_title,
       status,
+      registrationStatus,
       remarks: remarks || null,
+      decidedAt: new Date().toISOString(),
     }
   } catch (error) {
     await client.query('ROLLBACK')
@@ -549,7 +626,12 @@ async function listExams(
        ON oc.offered_course_id =
           e.offered_course_id
      WHERE e.offered_course_id = $1
-       AND oc.teacher_id = $2
+       AND EXISTS (
+         SELECT 1
+           FROM offering_teachers ot
+          WHERE ot.offered_course_id = oc.offered_course_id
+            AND ot.teacher_id = $2
+       )
      ORDER BY
        e.exam_date,
        e.exam_id`,
@@ -603,8 +685,12 @@ async function createExam({
   number,
   part,
 }) {
+  const client = await db.pool.connect()
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN')
+
+    const result = await client.query(
       `INSERT INTO exams (
          offered_course_id,
          exam_type,
@@ -622,9 +708,9 @@ async function createExam({
          $7
        WHERE EXISTS (
          SELECT 1
-         FROM offered_courses
-         WHERE offered_course_id = $1
-           AND teacher_id = $2
+         FROM offering_teachers ot
+         WHERE ot.offered_course_id = $1
+           AND ot.teacher_id = $2
        )
        RETURNING
          exam_id,
@@ -650,6 +736,8 @@ async function createExam({
       )
     }
 
+    await client.query('COMMIT')
+
     const row = result.rows[0]
 
     return {
@@ -663,6 +751,8 @@ async function createExam({
       part: row.exam_part,
     }
   } catch (error) {
+    await client.query('ROLLBACK')
+
     if (error.code === '23514') {
       throw new Error('INVALID_EXAM')
     }
@@ -674,6 +764,8 @@ async function createExam({
     }
 
     throw error
+  } finally {
+    client.release()
   }
 }
 
@@ -700,7 +792,12 @@ async function upsertResult({
            ON oc.offered_course_id =
               r.offered_course_id
          WHERE r.registration_id = $1
-           AND oc.teacher_id = $2
+           AND EXISTS (
+             SELECT 1
+               FROM offering_teachers ot
+              WHERE ot.offered_course_id = oc.offered_course_id
+                AND ot.teacher_id = $2
+           )
            AND r.status = 'ACTIVE'
          FOR UPDATE`,
         [enrollmentId, teacherId]
@@ -794,45 +891,63 @@ async function publishResult(
   resultId,
   teacherId
 ) {
-  const result = await db.query(
-    `UPDATE results r
-        SET published_at =
-          COALESCE(
-            r.published_at,
-            CURRENT_TIMESTAMP
+  const client = await db.pool.connect()
+
+  try {
+    await client.query('BEGIN')
+
+    const result = await client.query(
+      `UPDATE results r
+          SET published_at =
+            COALESCE(
+              r.published_at,
+              CURRENT_TIMESTAMP
+            )
+         FROM exams e
+         JOIN offered_courses oc
+           ON oc.offered_course_id =
+              e.offered_course_id
+        WHERE r.result_id = $1
+          AND r.exam_id = e.exam_id
+          AND EXISTS (
+            SELECT 1
+              FROM offering_teachers ot
+             WHERE ot.offered_course_id = oc.offered_course_id
+               AND ot.teacher_id = $2
           )
-       FROM exams e
-       JOIN offered_courses oc
-         ON oc.offered_course_id =
-            e.offered_course_id
-      WHERE r.result_id = $1
-        AND r.exam_id = e.exam_id
-        AND oc.teacher_id = $2
-      RETURNING
-        r.result_id,
-        r.exam_id,
-        r.student_id,
-        r.marks_obtained,
-        r.grade,
-        r.published_at`,
-    [resultId, teacherId]
-  )
-
-  if (!result.rows[0]) {
-    throw new Error(
-      'RESULT_NOT_OWNED'
+        RETURNING
+          r.result_id,
+          r.exam_id,
+          r.student_id,
+          r.marks_obtained,
+          r.grade,
+          r.published_at`,
+      [resultId, teacherId]
     )
-  }
 
-  const row = result.rows[0]
+    if (!result.rows[0]) {
+      throw new Error(
+        'RESULT_NOT_OWNED'
+      )
+    }
 
-  return {
-    resultId: String(row.result_id),
-    examId: String(row.exam_id),
-    studentId: String(row.student_id),
-    marks: Number(row.marks_obtained),
-    grade: row.grade,
-    publishedAt: row.published_at,
+    await client.query('COMMIT')
+
+    const row = result.rows[0]
+
+    return {
+      resultId: String(row.result_id),
+      examId: String(row.exam_id),
+      studentId: String(row.student_id),
+      marks: Number(row.marks_obtained),
+      grade: row.grade,
+      publishedAt: row.published_at,
+    }
+  } catch (error) {
+    await client.query('ROLLBACK')
+    throw error
+  } finally {
+    client.release()
   }
 }
 

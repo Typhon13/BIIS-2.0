@@ -690,15 +690,19 @@ async function listPrograms({ deptId }) {
 }
 
 async function createProgram({ programName, degreeLevel, deptId }) {
+  const client = await db.pool.connect();
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       `INSERT INTO programs (program_name, degree_level, dept_id)
        VALUES ($1, $2, $3)
        RETURNING program_id`,
       [programName, degreeLevel, deptId],
     );
 
-    const created = await db.query(
+    const created = await client.query(
       `SELECT p.program_id, p.program_name, p.degree_level, p.dept_id,
               d.dept_name, d.dept_short_name
          FROM programs p
@@ -707,11 +711,16 @@ async function createProgram({ programName, degreeLevel, deptId }) {
       [result.rows[0].program_id],
     );
 
+    await client.query('COMMIT');
     return mapProgram(created.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
+
     if (error.code === '23503') throw new Error('DEPARTMENT_NOT_FOUND');
     if (error.code === '23505') throw new Error('PROGRAM_ALREADY_EXISTS');
     throw new Error('PROGRAM_CREATE_FAILED');
+  } finally {
+    client.release();
   }
 }
 
@@ -746,15 +755,19 @@ async function listBatches({ deptId, programId }) {
 }
 
 async function createBatch({ batchName, programId, admissionYear }) {
+  const client = await db.pool.connect();
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       `INSERT INTO batches (batch_name, program_id, admission_year)
        VALUES ($1, $2, $3)
        RETURNING batch_id`,
       [batchName, programId, admissionYear],
     );
 
-    const created = await db.query(
+    const created = await client.query(
       `SELECT b.batch_id, b.batch_name, b.program_id, b.admission_year,
               p.program_name, p.degree_level, p.dept_id,
               d.dept_name, d.dept_short_name
@@ -765,12 +778,17 @@ async function createBatch({ batchName, programId, admissionYear }) {
       [result.rows[0].batch_id],
     );
 
+    await client.query('COMMIT');
     return mapBatch(created.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
+
     if (error.code === '23503') throw new Error('PROGRAM_NOT_FOUND');
     if (error.code === '23505') throw new Error('BATCH_ALREADY_EXISTS');
     if (error.code === '23514') throw new Error('INVALID_BATCH_INPUT');
     throw new Error('BATCH_CREATE_FAILED');
+  } finally {
+    client.release();
   }
 }
 
@@ -831,7 +849,10 @@ async function updateStudent(studentId, { username, email, studentIdNumber, name
         FOR UPDATE`,
       [studentId],
     );
-    if (!existing.rows[0]) return null;
+    if (!existing.rows[0]) {
+      await client.query('COMMIT');
+      return null;
+    }
 
     const current = existing.rows[0];
     const nextUsername = username !== undefined ? username : current.username;
@@ -902,20 +923,33 @@ async function updateStudent(studentId, { username, email, studentIdNumber, name
 }
 
 async function createDepartment({ deptName, deptShortName }) {
-  const result = await db.query(
-    `
-      INSERT INTO departments (dept_name, dept_short_name)
-      VALUES ($1, $2)
-      RETURNING dept_id, dept_name, dept_short_name, head_id
-    `,
-    [deptName, deptShortName],
-  );
+  const client = await db.pool.connect();
 
-  const department = result.rows[0];
-  return mapDepartment({
-    ...department,
-    teacher_count: 0,
-  });
+  try {
+    await client.query('BEGIN');
+
+    const result = await client.query(
+      `
+        INSERT INTO departments (dept_name, dept_short_name)
+        VALUES ($1, $2)
+        RETURNING dept_id, dept_name, dept_short_name, head_id
+      `,
+      [deptName, deptShortName],
+    );
+
+    await client.query('COMMIT');
+
+    const department = result.rows[0];
+    return mapDepartment({
+      ...department,
+      teacher_count: 0,
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function updateDepartment(deptId, updates) {

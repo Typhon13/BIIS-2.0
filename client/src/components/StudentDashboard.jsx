@@ -225,12 +225,32 @@ export default function StudentDashboard({
   }, [data.results])
 
   /*
-   * GPA is weighted by the credit value of
-   * every course with published results.
+   * A transcript should contain completed course results only.
+   * Component-level / partially published marks still appear in
+   * View Grades, but they do not affect CGPA until the published
+   * maximum reaches the configured course total.
+   */
+  const finalSummaries = useMemo(
+    () =>
+      summaries.filter((item) => {
+        const configuredTotal = Number(
+          item.course.totalMarks || item.maximum
+        )
+
+        return (
+          configuredTotal > 0 &&
+          item.maximum >= configuredTotal
+        )
+      }),
+    [summaries]
+  )
+
+  /*
+   * CGPA is weighted by the credit value of finalized courses only.
    */
   const transcript = useMemo(() => {
     const totalCredits =
-      summaries.reduce(
+      finalSummaries.reduce(
         (sum, item) =>
           sum +
           Number(
@@ -240,7 +260,7 @@ export default function StudentDashboard({
       )
 
     const weightedPoints =
-      summaries.reduce(
+      finalSummaries.reduce(
         (sum, item) =>
           sum +
           item.gradePoint *
@@ -252,13 +272,19 @@ export default function StudentDashboard({
 
     return {
       totalCredits,
+      courseCount: finalSummaries.length,
+      pendingCourseCount:
+        summaries.length -
+        finalSummaries.length,
+      latestPeriod:
+        finalSummaries[0]?.term || null,
 
-      gpa: totalCredits
+      cgpa: totalCredits
         ? weightedPoints /
           totalCredits
         : 0,
     }
-  }, [summaries])
+  }, [finalSummaries, summaries.length])
 
   async function enroll(offeringId) {
     setBusyId(offeringId)
@@ -504,13 +530,18 @@ export default function StudentDashboard({
                       </td>
 
                       <td>
-                        {item.teacher
-                          ?.name ||
-                          'Unassigned'}
+                        {item.teachers?.length
+                          ? item.teachers
+                              .map((teacher) => teacher.name)
+                              .join(', ')
+                          : item.teacher?.name ||
+                            'Unassigned'}
                       </td>
 
                       <td>
-                        {item.section}
+                        {item.course.type === 'SESSIONAL'
+                          ? 'No section'
+                          : item.section || '—'}
                       </td>
 
                       <td>
@@ -622,7 +653,9 @@ export default function StudentDashboard({
                       </td>
 
                       <td>
-                        {item.section}
+                        {item.course.type === 'SESSIONAL'
+                          ? 'No section'
+                          : item.section || '—'}
                       </td>
 
                       <td>
@@ -660,76 +693,125 @@ export default function StudentDashboard({
       </Panel>
     )
   } else if (
-    activeItem === 'View Grades' ||
-    activeItem ===
-      'Results & Transcript'
+    activeItem === 'View Grades'
   ) {
     content = (
       <>
         <Panel
-          title="Results & Transcript"
+          title="Published Grades"
           actions={
-            summaries.length ? (
-              <span>
-                {transcript.totalCredits.toFixed(
-                  2
-                )}{' '}
-                credits · GPA{' '}
-                {transcript.gpa.toFixed(
-                  2
-                )}
+            data.results.length ? (
+              <span className="grade-heading-meta">
+                {data.results.length}{' '}
+                published component
+                {data.results.length === 1
+                  ? ''
+                  : 's'}
               </span>
             ) : null
           }
         >
           {summaries.length ? (
-            <div className="result-summary-grid">
-              {summaries.map((item) => (
-                <article
-                  className={
-                    item.grade === 'F'
-                      ? 'result-card failed-row'
-                      : 'result-card'
-                  }
-                  key={
-                    `${item.course.courseId}-` +
-                    `${item.term.name}-` +
-                    `${item.term.academicYear}`
-                  }
-                >
-                  <div>
-                    <strong>
-                      {item.course.code}
-                    </strong>
+            <div className="grade-overview-grid">
+              {summaries.map((item) => {
+                const percentage = item.maximum
+                  ? (
+                      (item.total /
+                        item.maximum) *
+                      100
+                    ).toFixed(1)
+                  : '0.0'
 
-                    <span>
-                      {item.course.title}
-                    </span>
+                const configuredTotal =
+                  Number(
+                    item.course.totalMarks ||
+                      item.maximum
+                  )
 
-                    <small>
-                      {item.course.type}{' '}
-                      ·{' '}
+                const isFinal =
+                  configuredTotal > 0 &&
+                  item.maximum >=
+                    configuredTotal
+
+                return (
+                  <article
+                    className={
+                      `grade-overview-card ` +
+                      (item.grade === 'F'
+                        ? 'is-failed '
+                        : '') +
+                      (isFinal
+                        ? 'is-final'
+                        : 'is-progress')
+                    }
+                    key={
+                      `${item.course.courseId}-` +
+                      `${item.term.name}-` +
+                      `${item.term.academicYear}`
+                    }
+                  >
+                    <div className="grade-overview-card-head">
+                      <div>
+                        <strong>
+                          {item.course.code}
+                        </strong>
+                        <span>
+                          {item.course.title}
+                        </span>
+                      </div>
+
+                      <span
+                        className={
+                          `grade-status-badge ` +
+                          (isFinal
+                            ? 'is-final'
+                            : 'is-progress')
+                        }
+                      >
+                        {isFinal
+                          ? 'Final'
+                          : 'In progress'}
+                      </span>
+                    </div>
+
+                    <small className="grade-course-meta">
+                      {item.term.name}{' '}
+                      {item.term.academicYear}
+                      {' · '}
+                      {item.course.type}
+                      {' · '}
                       {Number(
                         item.course.credit
                       ).toFixed(2)}{' '}
                       credits
                     </small>
-                  </div>
 
-                  <b>
-                    {item.total}/
-                    {item.maximum}
-                  </b>
+                    <div className="grade-card-metrics">
+                      <div>
+                        <span>Published marks</span>
+                        <strong>
+                          {item.total}/
+                          {item.maximum}
+                        </strong>
+                      </div>
 
-                  <em>
-                    {item.grade} (
-                    {item.gradePoint.toFixed(
-                      2
-                    )}
-                    )
-                  </em>
-                </article>
-              ))}
+                      <div>
+                        <span>Percentage</span>
+                        <strong>
+                          {percentage}%
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Current grade</span>
+                        <strong>
+                          {item.grade}
+                        </strong>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
             </div>
           ) : (
             <Empty>
@@ -739,7 +821,7 @@ export default function StudentDashboard({
           )}
         </Panel>
 
-        <Panel title="Published Mark Details">
+        <Panel title="Assessment Details">
           {data.results.length ? (
             <div className="academic-table-wrap">
               <table>
@@ -761,20 +843,19 @@ export default function StudentDashboard({
                     (item) => (
                       <tr
                         className={
-                          item.grade ===
-                          'F'
+                          item.grade === 'F'
                             ? 'failed-row'
                             : ''
                         }
-                        key={
-                          item.resultId
-                        }
+                        key={item.resultId}
                       >
                         <td>
-                          {
-                            item.course
-                              .code
-                          }
+                          <strong>
+                            {item.course.code}
+                          </strong>
+                          <small>
+                            {item.course.title}
+                          </small>
                         </td>
 
                         <td>
@@ -789,7 +870,9 @@ export default function StudentDashboard({
                         </td>
 
                         <td>
-                          {item.exam.date}
+                          {new Date(
+                            item.exam.date
+                          ).toLocaleDateString()}
                         </td>
 
                         <td>
@@ -804,7 +887,9 @@ export default function StudentDashboard({
                         </td>
 
                         <td>
-                          {item.grade}
+                          <span className="component-grade-badge">
+                            {item.grade}
+                          </span>
                         </td>
 
                         <td>
@@ -827,6 +912,234 @@ export default function StudentDashboard({
           )}
         </Panel>
       </>
+    )
+  } else if (
+    activeItem ===
+      'Results & Transcript'
+  ) {
+    content = (
+      <Panel title="Results & Transcript">
+        {finalSummaries.length ? (
+          <>
+            <div className="transcript-summary-grid">
+              <article className="transcript-summary-card transcript-cgpa-card">
+                <span>CGPA</span>
+                <strong>
+                  {transcript.cgpa.toFixed(
+                    2
+                  )}
+                </strong>
+                <small>
+                  out of 4.00
+                </small>
+              </article>
+
+              <article className="transcript-summary-card">
+                <span>
+                  Completed credits
+                </span>
+                <strong>
+                  {transcript.totalCredits.toFixed(
+                    2
+                  )}
+                </strong>
+                <small>
+                  finalized courses only
+                </small>
+              </article>
+
+              <article className="transcript-summary-card">
+                <span>
+                  Completed courses
+                </span>
+                <strong>
+                  {transcript.courseCount}
+                </strong>
+                <small>
+                  included in CGPA
+                </small>
+              </article>
+
+              <article className="transcript-summary-card">
+                <span>
+                  Latest period
+                </span>
+                <strong className="transcript-period">
+                  {transcript.latestPeriod
+                    ?.name || '—'}
+                </strong>
+                <small>
+                  {transcript.latestPeriod
+                    ?.academicYear || ''}
+                </small>
+              </article>
+            </div>
+
+            {transcript.pendingCourseCount >
+              0 && (
+              <p className="transcript-note">
+                {
+                  transcript.pendingCourseCount
+                }{' '}
+                course
+                {transcript.pendingCourseCount ===
+                1
+                  ? ''
+                  : 's'}{' '}
+                with partially published
+                marks are shown under View
+                Grades and are not included
+                in CGPA yet.
+              </p>
+            )}
+
+            <div className="academic-table-wrap transcript-table-wrap">
+              <table className="transcript-table">
+                <thead>
+                  <tr>
+                    <th>Course</th>
+                    <th>Course title</th>
+                    <th>Academic period</th>
+                    <th>Credits</th>
+                    <th>Final marks</th>
+                    <th>Grade</th>
+                    <th>Grade point</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {finalSummaries.map(
+                    (item) => (
+                      <tr
+                        className={
+                          item.grade === 'F'
+                            ? 'failed-row'
+                            : ''
+                        }
+                        key={
+                          `${item.course.courseId}-` +
+                          `${item.term.name}-` +
+                          `${item.term.academicYear}`
+                        }
+                      >
+                        <td>
+                          <strong>
+                            {
+                              item.course
+                                .code
+                            }
+                          </strong>
+                        </td>
+
+                        <td>
+                          {
+                            item.course
+                              .title
+                          }
+                          <small>
+                            {
+                              item.course
+                                .type
+                            }
+                          </small>
+                        </td>
+
+                        <td>
+                          {item.term.name}
+                          <small>
+                            {
+                              item.term
+                                .academicYear
+                            }
+                          </small>
+                        </td>
+
+                        <td>
+                          {Number(
+                            item.course
+                              .credit
+                          ).toFixed(2)}
+                        </td>
+
+                        <td>
+                          <strong>
+                            {item.total}/
+                            {item.maximum}
+                          </strong>
+                        </td>
+
+                        <td>
+                          <span
+                            className={
+                              `transcript-grade-badge ` +
+                              (item.grade ===
+                              'F'
+                                ? 'is-failed'
+                                : '')
+                            }
+                          >
+                            {item.grade}
+                          </span>
+                        </td>
+
+                        <td>
+                          {item.gradePoint.toFixed(
+                            2
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+
+                <tfoot>
+                  <tr>
+                    <td colSpan="3">
+                      Transcript summary
+                    </td>
+                    <td>
+                      <strong>
+                        {transcript.totalCredits.toFixed(
+                          2
+                        )}
+                      </strong>
+                    </td>
+                    <td colSpan="2">
+                      CGPA
+                    </td>
+                    <td>
+                      <strong>
+                        {transcript.cgpa.toFixed(
+                          2
+                        )}
+                      </strong>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </>
+        ) : summaries.length ? (
+          <div className="transcript-waiting-state">
+            <strong>
+              Final transcript is not
+              available yet.
+            </strong>
+            <p>
+              Published component marks
+              are available under View
+              Grades, but no course has
+              all of its configured marks
+              published yet.
+            </p>
+          </div>
+        ) : (
+          <Empty>
+            No finalized course results
+            are available yet.
+          </Empty>
+        )}
+      </Panel>
     )
   } else if (
     activeItem === 'Notices'

@@ -420,66 +420,6 @@ export const adminApi = {
       }
     )
   },
-
-  listServiceApplications(accessToken, filters = {}) {
-    const parameters = new URLSearchParams()
-
-    if (filters.type) parameters.set('type', filters.type)
-    if (filters.status) parameters.set('status', filters.status)
-    if (filters.search) parameters.set('search', filters.search)
-
-    return authorized(
-      `/admin/student-services/applications?${parameters.toString()}`,
-      accessToken
-    )
-  },
-
-  reviewServiceApplication(accessToken, applicationId, decision) {
-    return authorized(
-      `/admin/student-services/applications/${applicationId}`,
-      accessToken,
-      {
-        method: 'PATCH',
-        body: JSON.stringify(decision),
-      }
-    )
-  },
-
-  listServiceDues(accessToken, filters = {}) {
-    const parameters = new URLSearchParams()
-
-    if (filters.studentId) parameters.set('studentId', filters.studentId)
-    if (filters.type) parameters.set('type', filters.type)
-    if (filters.status) parameters.set('status', filters.status)
-    if (filters.search) parameters.set('search', filters.search)
-
-    return authorized(
-      `/admin/student-services/dues?${parameters.toString()}`,
-      accessToken
-    )
-  },
-
-  createServiceDue(accessToken, due) {
-    return authorized(
-      '/admin/student-services/dues',
-      accessToken,
-      {
-        method: 'POST',
-        body: JSON.stringify(due),
-      }
-    )
-  },
-
-  updateServiceDueStatus(accessToken, dueId, status) {
-    return authorized(
-      `/admin/student-services/dues/${dueId}`,
-      accessToken,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      }
-    )
-  },
 }
 
 export const academicApi = {
@@ -832,31 +772,6 @@ export const academicApi = {
         method: 'POST',
         body: JSON.stringify(application),
       }
-    )
-  },
-
-  studentApplications(accessToken, type) {
-    return authorized(
-      `/student/applications/${encodeURIComponent(type)}`,
-      accessToken
-    )
-  },
-
-  submitStudentApplication(accessToken, type, application) {
-    return authorized(
-      `/student/applications/${encodeURIComponent(type)}`,
-      accessToken,
-      {
-        method: 'POST',
-        body: JSON.stringify(application),
-      }
-    )
-  },
-
-  studentDues(accessToken) {
-    return authorized(
-      '/student/dues',
-      accessToken
     )
   },
 

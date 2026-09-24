@@ -37,11 +37,23 @@ function mapTerm(row) {
   };
 }
 
+function normalizeTeachers(value) {
+  if (!Array.isArray(value)) return [];
+
+  return value.map((teacher) => ({
+    teacherId: String(teacher.teacherId),
+    name: teacher.name,
+    username: teacher.username,
+  }));
+}
+
 function mapOffering(row) {
+  const teachers = normalizeTeachers(row.teachers);
+
   return {
     offeringId: String(row.offered_course_id),
-    section: row.section,
-    seatCapacity: row.seat_capacity,
+    section: row.section || null,
+    seatCapacity: Number(row.seat_capacity),
     enrolledCount:
       row.enrolled_count === undefined
         ? undefined
@@ -62,13 +74,9 @@ function mapOffering(row) {
       endDate: row.end_date,
       status: row.semester_status,
     },
-    teacher: row.teacher_id
-      ? {
-          teacherId: String(row.teacher_id),
-          name: row.teacher_name,
-          username: row.teacher_username,
-        }
-      : null,
+    teachers,
+    // Keep the old property so older UI code continues to work.
+    teacher: teachers[0] || null,
   };
 }
 
@@ -83,21 +91,30 @@ async function listDepartments() {
 }
 
 async function createDepartment({ name, code }) {
+  const client = await db.pool.connect();
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       `INSERT INTO departments (dept_name, dept_short_name)
        VALUES ($1, $2)
        RETURNING dept_id, dept_name, dept_short_name`,
       [name, code]
     );
 
+    await client.query('COMMIT');
     return mapDepartment(result.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
+
     if (error.code === '23505') {
       throw new Error('DUPLICATE_DEPARTMENT');
     }
 
     throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -125,8 +142,7 @@ async function listCourses() {
         d.dept_name,
         d.dept_short_name
        FROM courses c
-       JOIN departments d
-         ON d.dept_id = c.dept_id
+       JOIN departments d ON d.dept_id = c.dept_id
       ORDER BY c.course_code ASC`
   );
 
@@ -141,8 +157,12 @@ async function createCourse({
   totalMarks,
   departmentId,
 }) {
+  const client = await db.pool.connect();
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const inserted = await client.query(
       `INSERT INTO courses (
           course_code,
           course_title,
@@ -152,18 +172,11 @@ async function createCourse({
           dept_id
        )
        VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING
-          course_id,
-          course_code,
-          course_title,
-          credit,
-          course_type,
-          total_marks,
-          dept_id`,
+       RETURNING course_id`,
       [code, title, credit, type, totalMarks, departmentId]
     );
 
-    const course = await db.query(
+    const course = await client.query(
       `SELECT
           c.course_id,
           c.course_code,
@@ -175,29 +188,27 @@ async function createCourse({
           d.dept_name,
           d.dept_short_name
          FROM courses c
-         JOIN departments d
-           ON d.dept_id = c.dept_id
+         JOIN departments d ON d.dept_id = c.dept_id
         WHERE c.course_id = $1`,
-      [result.rows[0].course_id]
+      [inserted.rows[0].course_id]
     );
 
+    await client.query('COMMIT');
     return mapCourse(course.rows[0]);
   } catch (error) {
-    if (error.code === '23505') {
-      throw new Error('DUPLICATE_COURSE');
-    }
+    await client.query('ROLLBACK');
 
-    if (error.code === '23503') {
-      throw new Error('DEPARTMENT_NOT_FOUND');
-    }
-
+    if (error.code === '23505') throw new Error('DUPLICATE_COURSE');
+    if (error.code === '23503') throw new Error('DEPARTMENT_NOT_FOUND');
     throw error;
+  } finally {
+    client.release();
   }
 }
 
 async function findCourse(courseId) {
   const result = await db.query(
-    `SELECT course_id
+    `SELECT course_id, course_type
        FROM courses
       WHERE course_id = $1`,
     [courseId]
@@ -206,9 +217,16 @@ async function findCourse(courseId) {
   return result.rows[0] || null;
 }
 
-async function updateCourse(courseId, { code, title, credit, type, totalMarks, departmentId }) {
+async function updateCourse(
+  courseId,
+  { code, title, credit, type, totalMarks, departmentId }
+) {
+  const client = await db.pool.connect();
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       `UPDATE courses
           SET course_code = $1,
               course_title = $2,
@@ -218,26 +236,41 @@ async function updateCourse(courseId, { code, title, credit, type, totalMarks, d
               dept_id = $6
         WHERE course_id = $7
         RETURNING course_id`,
-      [code, title, credit, type, totalMarks, departmentId, courseId],
+      [code, title, credit, type, totalMarks, departmentId, courseId]
     );
 
-    if (!result.rows[0]) return null;
+    if (!result.rows[0]) {
+      await client.query('COMMIT');
+      return null;
+    }
 
-    const updated = await db.query(
-      `SELECT c.course_id, c.course_code, c.course_title, c.credit,
-              c.course_type, c.total_marks, d.dept_id, d.dept_name,
-              d.dept_short_name
+    const updated = await client.query(
+      `SELECT
+          c.course_id,
+          c.course_code,
+          c.course_title,
+          c.credit,
+          c.course_type,
+          c.total_marks,
+          d.dept_id,
+          d.dept_name,
+          d.dept_short_name
          FROM courses c
          JOIN departments d ON d.dept_id = c.dept_id
         WHERE c.course_id = $1`,
-      [courseId],
+      [courseId]
     );
 
+    await client.query('COMMIT');
     return mapCourse(updated.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
+
     if (error.code === '23505') throw new Error('DUPLICATE_COURSE');
     if (error.code === '23503') throw new Error('DEPARTMENT_NOT_FOUND');
     throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -257,15 +290,13 @@ async function listTerms() {
   return result.rows.map(mapTerm);
 }
 
-async function createTerm({
-  name,
-  academicYear,
-  startDate,
-  endDate,
-  status,
-}) {
+async function createTerm({ name, academicYear, startDate, endDate, status }) {
+  const client = await db.pool.connect();
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       `INSERT INTO semesters (
           semester_name,
           academic_year,
@@ -284,17 +315,16 @@ async function createTerm({
       [name, academicYear, startDate, endDate, status]
     );
 
+    await client.query('COMMIT');
     return mapTerm(result.rows[0]);
   } catch (error) {
-    if (error.code === '23505') {
-      throw new Error('DUPLICATE_TERM');
-    }
+    await client.query('ROLLBACK');
 
-    if (error.code === '23514') {
-      throw new Error('INVALID_TERM');
-    }
-
+    if (error.code === '23505') throw new Error('DUPLICATE_TERM');
+    if (error.code === '23514') throw new Error('INVALID_TERM');
     throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -317,16 +347,14 @@ async function listTeachers() {
         t.designation,
         t.dept_id,
         d.dept_name,
+        d.dept_short_name,
         u.user_id,
         u.username,
         u.email
        FROM teachers t
-       JOIN users u
-         ON u.user_id = t.user_id
-       JOIN roles r
-         ON r.role_id = u.role_id
-       JOIN departments d
-         ON d.dept_id = t.dept_id
+       JOIN users u ON u.user_id = t.user_id
+       JOIN roles r ON r.role_id = u.role_id
+       JOIN departments d ON d.dept_id = t.dept_id
       WHERE r.role_name = 'TEACHER'
         AND u.account_status = 'ACTIVE'
       ORDER BY t.name ASC`
@@ -342,6 +370,7 @@ async function listTeachers() {
     department: {
       departmentId: String(row.dept_id),
       name: row.dept_name,
+      code: row.dept_short_name,
     },
   }));
 }
@@ -350,10 +379,8 @@ async function findActiveTeacher(teacherId) {
   const result = await db.query(
     `SELECT t.teacher_id
        FROM teachers t
-       JOIN users u
-         ON u.user_id = t.user_id
-       JOIN roles r
-         ON r.role_id = u.role_id
+       JOIN users u ON u.user_id = t.user_id
+       JOIN roles r ON r.role_id = u.role_id
       WHERE t.teacher_id = $1
         AND r.role_name = 'TEACHER'
         AND u.account_status = 'ACTIVE'`,
@@ -368,7 +395,6 @@ const offeringSelect = `
       oc.offered_course_id,
       oc.course_id,
       oc.semester_id,
-      oc.teacher_id,
       oc.section,
       oc.seat_capacity,
       c.course_code,
@@ -381,36 +407,38 @@ const offeringSelect = `
       s.start_date,
       s.end_date,
       s.status AS semester_status,
-      t.name AS teacher_name,
-      tu.username AS teacher_username,
-      COUNT(r.registration_id)
-        FILTER (WHERE r.status = 'ACTIVE')::int AS enrolled_count
+      COALESCE((
+        SELECT COUNT(*)::int
+          FROM registrations r
+         WHERE r.offered_course_id = oc.offered_course_id
+           AND r.status = 'ACTIVE'
+      ), 0) AS enrolled_count,
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'teacherId', t.teacher_id::text,
+            'name', t.name,
+            'username', u.username
+          )
+          ORDER BY t.name, t.teacher_id
+        )
+          FROM offering_teachers ot
+          JOIN teachers t ON t.teacher_id = ot.teacher_id
+          JOIN users u ON u.user_id = t.user_id
+         WHERE ot.offered_course_id = oc.offered_course_id
+      ), '[]'::jsonb) AS teachers
     FROM offered_courses oc
-    JOIN courses c
-      ON c.course_id = oc.course_id
-    JOIN semesters s
-      ON s.semester_id = oc.semester_id
-    LEFT JOIN teachers t
-      ON t.teacher_id = oc.teacher_id
-    LEFT JOIN users tu
-      ON tu.user_id = t.user_id
-    LEFT JOIN registrations r
-      ON r.offered_course_id = oc.offered_course_id
+    JOIN courses c ON c.course_id = oc.course_id
+    JOIN semesters s ON s.semester_id = oc.semester_id
 `;
 
 async function listOfferings() {
   const result = await db.query(
     `${offeringSelect}
-     GROUP BY
-        oc.offered_course_id,
-        c.course_id,
-        s.semester_id,
-        t.teacher_id,
-        tu.user_id
      ORDER BY
-        s.start_date DESC,
-        c.course_code,
-        oc.section`
+       s.start_date DESC,
+       c.course_code,
+       oc.section NULLS FIRST`
   );
 
   return result.rows.map(mapOffering);
@@ -419,13 +447,7 @@ async function listOfferings() {
 async function findOffering(offeringId) {
   const result = await db.query(
     `${offeringSelect}
-     WHERE oc.offered_course_id = $1
-     GROUP BY
-        oc.offered_course_id,
-        c.course_id,
-        s.semester_id,
-        t.teacher_id,
-        tu.user_id`,
+     WHERE oc.offered_course_id = $1`,
     [offeringId]
   );
 
@@ -435,12 +457,16 @@ async function findOffering(offeringId) {
 async function createOffering({
   courseId,
   termId,
-  teacherId,
+  teacherIds,
   section,
   seatCapacity,
 }) {
+  const client = await db.pool.connect();
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       `INSERT INTO offered_courses (
           course_id,
           semester_id,
@@ -453,63 +479,113 @@ async function createOffering({
       [
         courseId,
         termId,
-        teacherId || null,
+        teacherIds[0] || null,
         section,
         seatCapacity,
       ]
     );
 
-    return findOffering(result.rows[0].offered_course_id);
+    const offeringId = result.rows[0].offered_course_id;
+
+    if (teacherIds.length) {
+      await client.query(
+        `INSERT INTO offering_teachers (offered_course_id, teacher_id)
+         SELECT $1, teacher_id
+           FROM unnest($2::bigint[]) AS teacher_id
+         ON CONFLICT DO NOTHING`,
+        [offeringId, teacherIds]
+      );
+    }
+
+    await client.query('COMMIT');
+    return findOffering(offeringId);
   } catch (error) {
-    if (error.code === '23505') {
-      throw new Error('DUPLICATE_OFFERING');
-    }
+    await client.query('ROLLBACK');
 
-    if (error.code === '23503') {
-      throw new Error('RELATED_RECORD_NOT_FOUND');
-    }
-
-    if (error.code === '23514') {
-      throw new Error('INVALID_OFFERING');
-    }
+    if (error.code === '23505') throw new Error('DUPLICATE_OFFERING');
+    if (error.code === '23503') throw new Error('RELATED_RECORD_NOT_FOUND');
+    if (error.code === '23514') throw new Error('INVALID_OFFERING');
 
     throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function setOfferingTeachers(offeringId, teacherIds) {
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const locked = await client.query(
+      `SELECT offered_course_id
+         FROM offered_courses
+        WHERE offered_course_id = $1
+        FOR UPDATE`,
+      [offeringId]
+    );
+
+    if (!locked.rows[0]) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    await client.query(
+      `DELETE FROM offering_teachers
+        WHERE offered_course_id = $1`,
+      [offeringId]
+    );
+
+    if (teacherIds.length) {
+      await client.query(
+        `INSERT INTO offering_teachers (offered_course_id, teacher_id)
+         SELECT $1, teacher_id
+           FROM unnest($2::bigint[]) AS teacher_id
+         ON CONFLICT DO NOTHING`,
+        [offeringId, teacherIds]
+      );
+    }
+
+    // Keep the original column in sync for older code/data tools.
+    await client.query(
+      `UPDATE offered_courses
+          SET teacher_id = $2
+        WHERE offered_course_id = $1`,
+      [offeringId, teacherIds[0] || null]
+    );
+
+    await client.query('COMMIT');
+    return findOffering(offeringId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (error.code === '23503') throw new Error('TEACHER_NOT_FOUND');
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
 async function assignTeacher(offeringId, teacherId) {
-  const result = await db.query(
-    `UPDATE offered_courses
-        SET teacher_id = $1
-      WHERE offered_course_id = $2
-      RETURNING offered_course_id`,
-    [teacherId, offeringId]
-  );
-
-  return result.rows[0]
-    ? findOffering(result.rows[0].offered_course_id)
-    : null;
+  return setOfferingTeachers(offeringId, [teacherId]);
 }
 
 module.exports = {
   listDepartments,
   createDepartment,
   findDepartment,
-
   listCourses,
   createCourse,
   updateCourse,
   findCourse,
-
   listTerms,
   createTerm,
   findTerm,
-
   listTeachers,
   findActiveTeacher,
-
   listOfferings,
   findOffering,
   createOffering,
+  setOfferingTeachers,
   assignTeacher,
 };

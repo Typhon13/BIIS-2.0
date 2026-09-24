@@ -124,8 +124,6 @@ const offeringSelect = `
       s.start_date,
       s.end_date,
       s.status AS semester_status,
-      t.teacher_id,
-      t.name AS teacher_name,
       CASE
         WHEN b.admission_year IS NOT NULL THEN
           regexp_replace(
@@ -145,10 +143,24 @@ const offeringSelect = `
                ELSE '_SYLLABUS'
              END
       END AS syllabus_id,
-      COUNT(r.registration_id)
-        FILTER (
-          WHERE r.status = 'ACTIVE'
-        )::int AS enrolled_count
+      COALESCE((
+        SELECT COUNT(*)::int
+          FROM registrations counted
+         WHERE counted.offered_course_id = oc.offered_course_id
+           AND counted.status = 'ACTIVE'
+      ), 0) AS enrolled_count,
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'teacherId', t.teacher_id::text,
+            'name', t.name
+          )
+          ORDER BY t.name, t.teacher_id
+        )
+          FROM offering_teachers ot
+          JOIN teachers t ON t.teacher_id = ot.teacher_id
+         WHERE ot.offered_course_id = oc.offered_course_id
+      ), '[]'::jsonb) AS teachers
     FROM offered_courses oc
     JOIN courses c
       ON c.course_id = oc.course_id
@@ -156,58 +168,41 @@ const offeringSelect = `
       ON d.dept_id = c.dept_id
     JOIN semesters s
       ON s.semester_id = oc.semester_id
-    LEFT JOIN teachers t
-      ON t.teacher_id = oc.teacher_id
-    LEFT JOIN registrations r
-      ON r.offered_course_id =
-         oc.offered_course_id
 `;
 
 function courseNumber(code, departmentCode) {
-  if (!code) {
-    return code
-  }
-
-  if (/^[A-Za-z]/.test(code) || !departmentCode) {
-    return code
-  }
-
-  return `${departmentCode} ${code}`
+  if (!code) return code;
+  if (/^[A-Za-z]/.test(code) || !departmentCode) return code;
+  return `${departmentCode} ${code}`;
 }
 
 function mapOffering(row) {
+  const teachers = Array.isArray(row.teachers)
+    ? row.teachers.map((teacher) => ({
+        teacherId: String(teacher.teacherId),
+        name: teacher.name,
+      }))
+    : [];
+
   return {
-    offeringId: String(
-      row.offered_course_id
-    ),
-
-    section: row.section,
-    seatCapacity: row.seat_capacity,
-    enrolledCount: Number(
-      row.enrolled_count || 0
-    ),
+    offeringId: String(row.offered_course_id),
+    section: row.section || null,
+    seatCapacity: Number(row.seat_capacity),
+    enrolledCount: Number(row.enrolled_count || 0),
     syllabusId: row.syllabus_id || null,
-
     course: {
       courseId: String(row.course_id),
-      code: courseNumber(
-        row.course_code,
-        row.dept_short_name
-      ),
+      code: courseNumber(row.course_code, row.dept_short_name),
       title: row.course_title,
       credit: Number(row.credit),
       type: row.course_type,
-      totalMarks: Number(
-        row.course_total_marks
-      ),
+      totalMarks: Number(row.course_total_marks),
     },
-
     department: {
       departmentId: String(row.dept_id),
       name: row.dept_name,
       code: row.dept_short_name,
     },
-
     term: {
       termId: String(row.semester_id),
       name: row.semester_name,
@@ -216,15 +211,8 @@ function mapOffering(row) {
       endDate: row.end_date,
       status: row.semester_status,
     },
-
-    teacher: row.teacher_id
-      ? {
-          teacherId: String(
-            row.teacher_id
-          ),
-          name: row.teacher_name,
-        }
-      : null,
+    teachers,
+    teacher: teachers[0] || null,
   };
 }
 
@@ -239,10 +227,7 @@ async function listAvailableOfferings(studentId) {
        ON b.batch_id = st.batch_id
      LEFT JOIN programs p
        ON p.program_id = b.program_id
-     WHERE s.status IN (
-       'UPCOMING',
-       'ACTIVE'
-     )
+     WHERE s.status IN ('UPCOMING', 'ACTIVE')
        AND NOT EXISTS (
          SELECT 1
            FROM registrations existing
@@ -250,24 +235,16 @@ async function listAvailableOfferings(studentId) {
             AND existing.offered_course_id = oc.offered_course_id
             AND existing.status IN ('PENDING', 'ACTIVE')
        )
-     GROUP BY
-       oc.offered_course_id,
-       c.course_id,
-       d.dept_id,
-       s.semester_id,
-       t.teacher_id,
-       sd.dept_short_name,
-       b.admission_year,
-       p.degree_level,
-       p.program_name
-     HAVING COUNT(r.registration_id)
-       FILTER (
-         WHERE r.status = 'ACTIVE'
-       ) < oc.seat_capacity
+       AND COALESCE((
+         SELECT COUNT(*)::int
+           FROM registrations counted
+          WHERE counted.offered_course_id = oc.offered_course_id
+            AND counted.status = 'ACTIVE'
+       ), 0) < oc.seat_capacity
      ORDER BY
        s.start_date,
        c.course_code,
-       oc.section`,
+       oc.section NULLS FIRST`,
     [studentId]
   );
 
@@ -431,6 +408,13 @@ async function enroll({
           ]
         );
       }
+    } else {
+      await client.query(
+        `DELETE FROM approvals
+          WHERE registration_id = $1
+            AND approval_type = 'COURSE_REGISTRATION'`,
+        [result.rows[0].registration_id]
+      );
     }
 
     await client.query('COMMIT');
@@ -785,8 +769,12 @@ async function createApplication({
   statement,
   requestedAmount,
 }) {
+  const client = await db.pool.connect();
+
   try {
-    const result = await db.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       `INSERT INTO student_applications (
          student_id,
          application_type,
@@ -814,13 +802,18 @@ async function createApplication({
       ]
     );
 
+    await client.query('COMMIT');
     return mapApplication(result.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
+
     if (error.code === '23505') {
       throw new Error('DUPLICATE_PENDING_APPLICATION');
     }
 
     throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -846,6 +839,44 @@ async function listApplications(studentId, type) {
   return result.rows.map(mapApplication);
 }
 
+async function listDues(studentId) {
+  const result = await db.query(
+    `SELECT
+       due_id,
+       due_type,
+       description,
+       amount,
+       due_date,
+       status,
+       paid_at,
+       created_at,
+       updated_at
+     FROM student_dues
+     WHERE student_id = $1
+     ORDER BY
+       CASE status
+         WHEN 'DUE' THEN 0
+         WHEN 'PAID' THEN 1
+         ELSE 2
+       END,
+       due_date NULLS LAST,
+       due_id DESC`,
+    [studentId]
+  );
+
+  return result.rows.map((row) => ({
+    dueId: String(row.due_id),
+    type: row.due_type,
+    description: row.description,
+    amount: Number(row.amount),
+    dueDate: row.due_date,
+    status: row.status,
+    paidAt: row.paid_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
 module.exports = {
   findStudentIdByUserId,
   findProfileByUserId,
@@ -855,6 +886,8 @@ module.exports = {
   findEnrollmentById,
   listEnrollments,
   listPublishedResults,
+  listNotices,
   createApplication,
   listApplications,
+  listDues,
 };

@@ -13,8 +13,12 @@ import AdminDepartmentManagement from '../components/admin/AdminDepartmentManage
 import AdminTeacherManagement from '../components/admin/AdminTeacherManagement'
 import AdminStudentManagement from '../components/admin/AdminStudentManagement'
 import AdminAdviserManagement from '../components/admin/AdminAdviserManagement'
+import AdminStudentServices from '../components/admin/AdminStudentServices'
+import AdminCourseOfferingManagement from '../components/admin/AdminCourseOfferingManagement'
 import DashboardLayout from '../components/DashboardLayout'
-import ScholarshipApplication from '../components/student/ScholarshipApplication';
+import ScholarshipApplication from '../components/student/ScholarshipApplication'
+import StudentApplication from '../components/student/StudentApplication'
+import StudentDues from '../components/student/StudentDues'
 import {
   AdminAcademic,
   PasswordChange,
@@ -22,6 +26,7 @@ import {
 } from '../components/RoleAcademicDashboard'
 
 import TeacherDashboard from '../components/TeacherDashboard'
+import TeacherAdvising from '../components/TeacherAdvising'
 import StudentDashboard from '../components/StudentDashboard'
 import CourseSelection from './CourseSelection'
 import RegisteredCourses from './RegisteredCourses'
@@ -45,6 +50,7 @@ const navigationByRole = {
         'Teachers',
         'Students',
         'Advisers',
+        'Applications & Dues',
       ],
     },
     {
@@ -118,17 +124,6 @@ const navigationByRole = {
   ],
 }
 
-const unavailableStudentItems = [
- 
-  'Trust Fund Scholarship',
-  'Loan Application',
-  'Degree Award Application',
-  'Testimonial or Certificate Application',
-  'Clearance or Dues List',
-  'Hall Fee',
-  'Dining Fee',
-  'Examination Fee',
-]
 
 function DashboardPage() {
   const {
@@ -439,12 +434,33 @@ function DashboardPage() {
       )
     }
 
+    if (
+      user.role === 'ADMIN' &&
+      activeItem === 'Applications & Dues'
+    ) {
+      return <AdminStudentServices />
+    }
+
+    if (
+      user.role === 'ADMIN' &&
+      activeItem === 'Course Offerings'
+    ) {
+      return <AdminCourseOfferingManagement />
+    }
+
     if (user.role === 'ADMIN') {
       return (
         <AdminAcademic
           activeItem={activeItem}
         />
       )
+    }
+
+    if (
+      user.role === 'TEACHER' &&
+      activeItem === 'Advising'
+    ) {
+      return <TeacherAdvising />
     }
 
     if (user.role === 'TEACHER') {
@@ -470,11 +486,77 @@ function DashboardPage() {
       return <StudentAdviser />
     }
     if (
-  user.role === 'STUDENT' &&
-  activeItem === 'Scholarship Application'
-) {
-  return <ScholarshipApplication />;
-}
+      user.role === 'STUDENT' &&
+      activeItem === 'Scholarship Application'
+    ) {
+      return <ScholarshipApplication />
+    }
+
+    if (
+      user.role === 'STUDENT' &&
+      activeItem === 'Trust Fund Scholarship'
+    ) {
+      return (
+        <StudentApplication
+          type="TRUST_FUND_SCHOLARSHIP"
+          title="Trust Fund Scholarship"
+          amountRequired
+          description="Apply for support from the university trust fund and track the decision here."
+        />
+      )
+    }
+
+    if (
+      user.role === 'STUDENT' &&
+      activeItem === 'Loan Application'
+    ) {
+      return (
+        <StudentApplication
+          type="LOAN"
+          title="Loan Application"
+          amountRequired
+          description="Submit a student loan request with the amount and supporting details."
+        />
+      )
+    }
+
+    if (
+      user.role === 'STUDENT' &&
+      activeItem === 'Degree Award Application'
+    ) {
+      return (
+        <StudentApplication
+          type="DEGREE_AWARD"
+          title="Degree Award Application"
+          description="Request processing for your degree award and track the review status."
+        />
+      )
+    }
+
+    if (
+      user.role === 'STUDENT' &&
+      activeItem === 'Testimonial or Certificate Application'
+    ) {
+      return (
+        <StudentApplication
+          type="TESTIMONIAL_CERTIFICATE"
+          title="Testimonial or Certificate Application"
+          description="Request a testimonial or certificate and track its review status."
+        />
+      )
+    }
+
+    if (
+      user.role === 'STUDENT' &&
+      [
+        'Clearance or Dues List',
+        'Hall Fee',
+        'Dining Fee',
+        'Examination Fee',
+      ].includes(activeItem)
+    ) {
+      return <StudentDues activeItem={activeItem} />
+    }
 
     if (activeItem === 'Add or Drop Courses') {
       return <CourseSelection />
@@ -482,27 +564,6 @@ function DashboardPage() {
 
     if (activeItem === 'Registration and enrolled courses') {
       return <RegisteredCourses />
-    }
-
-    if (
-      unavailableStudentItems.includes(
-        activeItem
-      )
-    ) {
-      return (
-        <section className="academic-panel">
-          <div className="academic-panel-heading">
-            <h2>
-              {activeItem}
-            </h2>
-          </div>
-
-          <p className="overview-copy">
-            Not available in this
-            demonstration.
-          </p>
-        </section>
-      )
     }
 
     return (

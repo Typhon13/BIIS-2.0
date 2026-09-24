@@ -119,13 +119,35 @@ async function seedCurrentData() {
       : await client.query('INSERT INTO semesters (semester_name, academic_year, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5) RETURNING semester_id', ['Level-2 Term-1', '2025-2026', '2026-06-20', '2026-11-25', 'ACTIVE']);
     const termId = term.rows[0].semester_id;
 
-    for (const [courseCode, section, capacity, teacherUsername] of offerings) {
-      const course = await client.query('SELECT course_id FROM courses WHERE course_code = $1', [courseCode]);
-      const existingOffering = await client.query('SELECT offered_course_id FROM offered_courses WHERE course_id = $1 AND semester_id = $2 AND section = $3', [course.rows[0].course_id, termId, section]);
+    for (const [courseCode, requestedSection, capacity, teacherUsername] of offerings) {
+      const course = await client.query(
+        'SELECT course_id, course_type FROM courses WHERE course_code = $1',
+        [courseCode],
+      );
+
+      const section = course.rows[0].course_type === 'SESSIONAL'
+        ? null
+        : requestedSection;
+
+      const existingOffering = await client.query(
+        `SELECT offered_course_id
+           FROM offered_courses
+          WHERE course_id = $1
+            AND semester_id = $2
+            AND section IS NOT DISTINCT FROM $3`,
+        [course.rows[0].course_id, termId, section],
+      );
+
       if (existingOffering.rows[0]) {
-        await client.query('UPDATE offered_courses SET teacher_id = $1, seat_capacity = $2 WHERE offered_course_id = $3', [teacherIds[teacherUsername], capacity, existingOffering.rows[0].offered_course_id]);
+        await client.query(
+          'UPDATE offered_courses SET teacher_id = $1, seat_capacity = $2, section = $3 WHERE offered_course_id = $4',
+          [teacherIds[teacherUsername], capacity, section, existingOffering.rows[0].offered_course_id],
+        );
       } else {
-        await client.query('INSERT INTO offered_courses (course_id, semester_id, teacher_id, section, seat_capacity) VALUES ($1, $2, $3, $4, $5)', [course.rows[0].course_id, termId, teacherIds[teacherUsername], section, capacity]);
+        await client.query(
+          'INSERT INTO offered_courses (course_id, semester_id, teacher_id, section, seat_capacity) VALUES ($1, $2, $3, $4, $5)',
+          [course.rows[0].course_id, termId, teacherIds[teacherUsername], section, capacity],
+        );
       }
     }
 

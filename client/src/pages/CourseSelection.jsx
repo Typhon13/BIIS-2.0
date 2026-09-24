@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAuth } from '../context/AuthContext'
 import { academicApi } from '../services/api'
@@ -13,10 +13,10 @@ export default function CourseSelection() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
-  async function fetchCourses() {
+  const fetchCourses = useCallback(async () => {
     const response = await academicApi.studentOfferings(accessToken)
     setAvailableCourses(response.data)
-  }
+  }, [accessToken])
 
   useEffect(() => {
     if (!accessToken) {
@@ -44,7 +44,7 @@ export default function CourseSelection() {
     return () => {
       cancelled = true
     }
-  }, [accessToken])
+  }, [accessToken, fetchCourses])
 
   const selectedCredits = useMemo(
     () =>
@@ -113,7 +113,7 @@ export default function CourseSelection() {
 
     setStatusKind('success')
     setStatus(
-      'Registration request sent to your adviser. Courses will stay pending until they are approved.'
+      'Registration request submitted. Courses that require adviser approval will remain pending until the adviser approves them.'
     )
   }
 

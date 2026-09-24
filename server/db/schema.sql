@@ -353,7 +353,7 @@ CREATE TABLE offered_courses (
     course_id           BIGINT NOT NULL,
     semester_id         BIGINT NOT NULL,
     teacher_id          BIGINT,
-    section             VARCHAR(30) NOT NULL,
+    section             VARCHAR(30),
     seat_capacity       INTEGER NOT NULL,
 
     CONSTRAINT fk_offered_courses_course
@@ -375,15 +375,70 @@ CREATE TABLE offered_courses (
         ON DELETE RESTRICT,
 
     CONSTRAINT ck_offered_courses_seat_capacity
-        CHECK (seat_capacity >= 0),
-
-    CONSTRAINT uq_offered_course_section
-        UNIQUE (course_id, semester_id, section)
+        CHECK (seat_capacity >= 0)
 );
 
 CREATE INDEX ix_offered_courses_course_id ON offered_courses(course_id);
 CREATE INDEX ix_offered_courses_semester_id ON offered_courses(semester_id);
 CREATE INDEX ix_offered_courses_teacher_id ON offered_courses(teacher_id);
+
+-- THEORY offerings have sections; SESSIONAL offerings have no section.
+CREATE UNIQUE INDEX ux_offered_course_theory_section
+    ON offered_courses(course_id, semester_id, section)
+    WHERE section IS NOT NULL;
+
+CREATE UNIQUE INDEX ux_offered_course_sessional_term
+    ON offered_courses(course_id, semester_id)
+    WHERE section IS NULL;
+
+-- Multiple teachers may be assigned to the same course offering.
+-- offered_courses.teacher_id is retained as a legacy/primary-teacher pointer
+-- for backwards compatibility, while this junction table is authoritative.
+CREATE TABLE offering_teachers (
+    offered_course_id BIGINT NOT NULL,
+    teacher_id        BIGINT NOT NULL,
+    assigned_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_offering_teachers
+        PRIMARY KEY (offered_course_id, teacher_id),
+
+    CONSTRAINT fk_offering_teachers_offering
+        FOREIGN KEY (offered_course_id)
+        REFERENCES offered_courses(offered_course_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_offering_teachers_teacher
+        FOREIGN KEY (teacher_id)
+        REFERENCES teachers(teacher_id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX ix_offering_teachers_teacher_id
+    ON offering_teachers(teacher_id);
+
+
+CREATE OR REPLACE FUNCTION sync_legacy_offering_teacher()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.teacher_id IS NOT NULL THEN
+        INSERT INTO offering_teachers (offered_course_id, teacher_id)
+        VALUES (NEW.offered_course_id, NEW.teacher_id)
+        ON CONFLICT DO NOTHING;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_sync_legacy_offering_teacher
+AFTER INSERT OR UPDATE OF teacher_id
+ON offered_courses
+FOR EACH ROW
+EXECUTE FUNCTION sync_legacy_offering_teacher();
 
 
 --COURSEPREREQUISITE
@@ -615,6 +670,9 @@ CREATE INDEX ix_approvals_registration_id ON approvals(registration_id);
 CREATE INDEX ix_approvals_teacher_id ON approvals(approver_teacher_id);
 CREATE INDEX ix_approvals_status ON approvals(approval_status);
 
+CREATE UNIQUE INDEX ux_approvals_registration_type
+    ON approvals(registration_id, approval_type);
+
 
 --RESULT
 CREATE TABLE results (
@@ -787,6 +845,52 @@ CREATE INDEX ix_student_applications_status
 CREATE UNIQUE INDEX ux_student_pending_application_type
     ON student_applications(student_id, application_type)
     WHERE status = 'PENDING';
+
+
+--STUDENT DUES
+CREATE TABLE student_dues (
+    due_id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    student_id    BIGINT NOT NULL,
+    due_type      VARCHAR(30) NOT NULL,
+    description   VARCHAR(500) NOT NULL,
+    amount        NUMERIC(12, 2) NOT NULL,
+    due_date      DATE,
+    status        VARCHAR(20) NOT NULL DEFAULT 'DUE',
+    paid_at       TIMESTAMPTZ,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_student_dues_student
+        FOREIGN KEY (student_id)
+        REFERENCES students(student_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_student_dues_type
+        CHECK (due_type IN ('HALL', 'DINING', 'EXAMINATION')),
+
+    CONSTRAINT ck_student_dues_amount
+        CHECK (amount > 0),
+
+    CONSTRAINT ck_student_dues_status
+        CHECK (status IN ('DUE', 'PAID', 'WAIVED')),
+
+    CONSTRAINT ck_student_dues_paid_at
+        CHECK (
+            (status = 'PAID' AND paid_at IS NOT NULL)
+            OR
+            (status <> 'PAID' AND paid_at IS NULL)
+        )
+);
+
+CREATE INDEX ix_student_dues_student
+    ON student_dues(student_id);
+
+CREATE INDEX ix_student_dues_status
+    ON student_dues(status);
+
+CREATE INDEX ix_student_dues_type
+    ON student_dues(due_type);
 --DEFAULT ROLES
 INSERT INTO roles (role_name)
 VALUES
@@ -823,11 +927,16 @@ AS $$
 DECLARE
   v_user_id BIGINT;
 BEGIN
-  SELECT t.user_id INTO v_user_id
-  FROM offered_courses oc
-  JOIN teachers t ON t.teacher_id = oc.teacher_id
-  WHERE oc.offered_course_id = p_offering_id
-    AND oc.teacher_id = p_teacher_id;
+  SELECT t.user_id
+    INTO v_user_id
+    FROM teachers t
+   WHERE t.teacher_id = p_teacher_id
+     AND EXISTS (
+       SELECT 1
+         FROM offering_teachers ot
+        WHERE ot.offered_course_id = p_offering_id
+          AND ot.teacher_id = p_teacher_id
+     );
 
   IF v_user_id IS NULL THEN
     RAISE EXCEPTION 'Offering is not assigned to this teacher'
@@ -835,11 +944,11 @@ BEGIN
   END IF;
 
   UPDATE results r
-  SET published_at = CURRENT_TIMESTAMP
-  FROM exams e
-  WHERE r.exam_id = e.exam_id
-    AND e.offered_course_id = p_offering_id
-    AND r.published_at IS NULL;
+     SET published_at = CURRENT_TIMESTAMP
+    FROM exams e
+   WHERE r.exam_id = e.exam_id
+     AND e.offered_course_id = p_offering_id
+     AND r.published_at IS NULL;
 
   GET DIAGNOSTICS p_published_count = ROW_COUNT;
 
@@ -856,4 +965,5 @@ BEGIN
   END IF;
 END;
 $$;
+
 COMMIT;

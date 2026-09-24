@@ -108,6 +108,11 @@ const errors = {
     'Pending advising request not found',
   ],
 
+  OFFERING_FULL: [
+    409,
+    'This course offering is full, so the registration cannot be approved',
+  ],
+
   NOT_FOUND: [
     404,
     'Resource not found',
