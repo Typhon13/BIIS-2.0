@@ -17,6 +17,7 @@ const departments = [
   ['Industrial & Production Engineering', 'IPE', ['IPE']],
   ['Electrical & Electronic Engineering', 'EEE', ['EEE']],
   ['Computer Science & Engineering', 'CSE', ['CSE']],
+  ['Computer Science and Engineering', '05', ['05']],
   ['Biomedical Engineering', 'BME', ['BME']],
   ['Architecture', 'Arch.', ['Arch.', 'Arch']],
   ['Humanities', 'Hum', ['Hum', 'HUM']],

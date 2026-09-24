@@ -37,7 +37,26 @@ async function createResetRequest({ userId, tokenHash, expiresAt }) {
 }
 
 async function invalidateRequest(requestId) {
-  await db.query('UPDATE password_reset_requests SET used_at = NOW() WHERE request_id = $1 AND used_at IS NULL', [requestId]);
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE password_reset_requests
+          SET used_at = NOW()
+        WHERE request_id = $1
+          AND used_at IS NULL`,
+      [requestId]
+    );
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function consumeResetToken({ tokenHash, passwordHash }) {

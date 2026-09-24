@@ -7,7 +7,7 @@ const statusByError = {
   INVALID_TERM: [400, 'Invalid term input'],
   INVALID_OFFERING: [400, 'Invalid offering input'],
   INVALID_OFFERING_ID: [400, 'Invalid offering ID'],
-  INVALID_TEACHER: [400, 'Invalid teacher ID'],
+  INVALID_TEACHER: [400, 'Invalid teacher selection'],
   DUPLICATE_DEPARTMENT: [409, 'Department name or code already exists'],
   DUPLICATE_COURSE: [409, 'Course code already exists'],
   DUPLICATE_TERM: [409, 'Academic term already exists'],
@@ -15,7 +15,7 @@ const statusByError = {
   DEPARTMENT_NOT_FOUND: [404, 'Department not found'],
   COURSE_NOT_FOUND: [404, 'Course not found'],
   TERM_NOT_FOUND: [404, 'Academic term not found'],
-  TEACHER_NOT_FOUND: [404, 'Active teacher profile not found'],
+  TEACHER_NOT_FOUND: [404, 'An assigned teacher is not active or does not exist'],
   OFFERING_NOT_FOUND: [404, 'Course offering not found'],
 };
 
@@ -40,11 +40,13 @@ const listDepartments = action(() => academicService.listDepartments());
 const createDepartment = action((req) => academicService.createDepartment(req.body), 201);
 const listCourses = action(() => academicService.listCourses());
 const createCourse = action((req) => academicService.createCourse(req.body), 201);
+const updateCourse = action((req) => academicService.updateCourse(req.params.courseId, req.body));
 const listTerms = action(() => academicService.listTerms());
 const createTerm = action((req) => academicService.createTerm(req.body), 201);
 const listTeachers = action(() => academicService.listTeachers());
 const listOfferings = action(() => academicService.listOfferings());
 const createOffering = action((req) => academicService.createOffering(req.body), 201);
+const setOfferingTeachers = action((req) => academicService.setOfferingTeachers(req.params.offeringId, req.body));
 const assignTeacher = action((req) => academicService.assignTeacher(req.params.offeringId, req.body));
 
 module.exports = {
@@ -52,10 +54,12 @@ module.exports = {
   createDepartment,
   listCourses,
   createCourse,
+  updateCourse,
   listTerms,
   createTerm,
   listTeachers,
   listOfferings,
   createOffering,
+  setOfferingTeachers,
   assignTeacher,
 };

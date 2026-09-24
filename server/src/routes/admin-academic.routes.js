@@ -6,6 +6,7 @@ const {
   handleAcademicValidation,
   departmentRules,
   courseRules,
+  courseIdRules,
   termRules,
   offeringRules,
   assignmentRules,
@@ -14,15 +15,33 @@ const {
 const router = express.Router();
 const adminOnly = [authenticate, authorizeRoles('ADMIN')];
 
-router.get('/departments', ...adminOnly, controller.listDepartments);
-router.post('/departments', ...adminOnly, departmentRules(), handleAcademicValidation, controller.createDepartment);
-router.get('/courses', ...adminOnly, controller.listCourses);
-router.post('/courses', ...adminOnly, courseRules(), handleAcademicValidation, controller.createCourse);
-router.get('/terms', ...adminOnly, controller.listTerms);
-router.post('/terms', ...adminOnly, termRules(), handleAcademicValidation, controller.createTerm);
-router.get('/teachers', ...adminOnly, controller.listTeachers);
-router.get('/offerings', ...adminOnly, controller.listOfferings);
-router.post('/offerings', ...adminOnly, offeringRules(), handleAcademicValidation, controller.createOffering);
-router.patch('/offerings/:offeringId/teacher', ...adminOnly, assignmentRules(), handleAcademicValidation, controller.assignTeacher);
+router.get('/academic/departments', ...adminOnly, controller.listDepartments);
+router.post('/academic/departments', ...adminOnly, departmentRules(), handleAcademicValidation, controller.createDepartment);
+router.get('/academic/courses', ...adminOnly, controller.listCourses);
+router.post('/academic/courses', ...adminOnly, courseRules(), handleAcademicValidation, controller.createCourse);
+router.patch('/academic/courses/:courseId', ...adminOnly, courseIdRules(), handleAcademicValidation, controller.updateCourse);
+router.get('/academic/terms', ...adminOnly, controller.listTerms);
+router.post('/academic/terms', ...adminOnly, termRules(), handleAcademicValidation, controller.createTerm);
+router.get('/academic/teachers', ...adminOnly, controller.listTeachers);
+router.get('/academic/offerings', ...adminOnly, controller.listOfferings);
+router.post('/academic/offerings', ...adminOnly, offeringRules(), handleAcademicValidation, controller.createOffering);
+
+// New multi-teacher route: replace the full teacher assignment list.
+router.patch(
+  '/academic/offerings/:offeringId/teachers',
+  ...adminOnly,
+  assignmentRules(),
+  handleAcademicValidation,
+  controller.setOfferingTeachers
+);
+
+// Backward-compatible single-teacher route.
+router.patch(
+  '/academic/offerings/:offeringId/teacher',
+  ...adminOnly,
+  assignmentRules(),
+  handleAcademicValidation,
+  controller.assignTeacher
+);
 
 module.exports = router;

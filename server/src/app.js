@@ -7,6 +7,9 @@ const adminRoutes = require('./routes/admin.routes');
 const adminAcademicRoutes = require(
   './routes/admin-academic.routes'
 );
+const adminStudentServicesRoutes = require(
+  './routes/admin-student-services.routes'
+);
 const teacherRoutes = require(
   './routes/teacher.routes'
 );
@@ -48,6 +51,10 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin', adminAcademicRoutes);
+app.use(
+  '/api/admin/student-services',
+  adminStudentServicesRoutes
+);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/student', studentRoutes);
 

@@ -80,13 +80,26 @@ async function createSessionAndUpdateLastLogin({
 async function revokeSessionByRefreshTokenHash(
   refreshTokenHash
 ) {
-  await db.query(
-    `UPDATE auth_sessions
-     SET revoked_at = CURRENT_TIMESTAMP
-     WHERE refresh_token_hash = $1
-       AND revoked_at IS NULL`,
-    [refreshTokenHash]
-  );
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE auth_sessions
+       SET revoked_at = CURRENT_TIMESTAMP
+       WHERE refresh_token_hash = $1
+         AND revoked_at IS NULL`,
+      [refreshTokenHash]
+    );
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function rotateRefreshToken({

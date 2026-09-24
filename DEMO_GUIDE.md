@@ -42,7 +42,12 @@ npm run db:migrate
 npm run db:seed
 npm run seed:demo
 npm run seed:demo
+npm run db:seed-buet-departments
+npm run db:seed-current-data
 ```
+
+`db:seed-current-data` restores the current academic setup and account data
+captured for this branch. It is idempotent and stores password hashes only.
 
 Running the seed twice should print readiness both times without creating duplicates.
 `db:migrate`, `db:seed`, and `db:init` are non-destructive. They preserve users and academic records.

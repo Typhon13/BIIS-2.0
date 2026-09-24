@@ -1,4 +1,5 @@
 import buetLogo from '../assets/buet-logo.png'
+import hero from '../assets/hero.png'
 
 function DashboardLayout({
   user,
@@ -15,38 +16,37 @@ function DashboardLayout({
   return (
     <div className="biis-portal-page">
       <main className="biis-portal-shell">
-        <header className="biis-portal-banner">
-          <img src={buetLogo} alt="Institutional crest" />
-          <div className="institution-copy">
-            <span className="eyebrow">BIIS 2.0</span>
-            <h1>Institutional Information System</h1>
-            <p>Bangladesh University of Engineering and Technology</p>
+        <header className="legacy-banner">
+          <img className="legacy-logo" src={buetLogo} alt="BUET logo" />
+          <div className="legacy-title">
+            <h1>বাংলাদেশ প্রকৌশল বিশ্ববিদ্যালয়</h1>
+            <p>BUET INSTITUTIONAL INFORMATION SYSTEM <strong>2.0</strong></p>
           </div>
-          <div className="header-account">
-            <span className="header-account-name">{user.username}</span>
-            <span className="role-badge">{user.role}</span>
-          </div>
+          <img className="legacy-campus" src={hero} alt="" aria-hidden="true" />
         </header>
 
-        <nav className="biis-portal-navbar">
-          <button type="button" onClick={() => onSelect('Overview')}>
-            Home
-          </button>
-
+        <nav className="legacy-navbar" aria-label="Primary navigation">
+          <a href="https://www.buet.ac.bd/" target="_blank" rel="noreferrer">BUET Home</a>
+          <button type="button" onClick={() => onSelect('Overview')}>Home</button>
           <button
             type="button"
-            onClick={() => onSelect('My Information')}
+            onClick={() =>
+              onSelect(
+                user?.role === 'STUDENT'
+                  ? 'My Information'
+                  : 'Overview'
+              )
+            }
           >
-            My Profile
+            Profile
           </button>
+          <span className="legacy-nav-spacer" />
 
           <button type="button" onClick={onToggleSidebar} className="mobile-menu-button" aria-expanded={isSidebarOpen}>
             Menu
           </button>
 
-          <button type="button" onClick={onLogout} className="topbar-logout">
-            Logout
-          </button>
+          <button type="button" onClick={onLogout}>Logout</button>
         </nav>
 
         <div className="biis-portal-layout">
@@ -69,16 +69,28 @@ function DashboardLayout({
                   {isExpanded && (
                     <div className="portal-submenu">
                       {group.items.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          className={
-                            activeItem === item ? 'active' : ''
-                          }
-                          onClick={() => onSelect(item)}
-                        >
-                          {item}
-                        </button>
+                        item === 'Academic Calendar' ? (
+                          <a
+                            key={item}
+                            className="portal-menu-link"
+                            href="https://www.buet.ac.bd/web/#/academics/1"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {item}
+                          </a>
+                        ) : (
+                          <button
+                            key={item}
+                            type="button"
+                            className={
+                              activeItem === item ? 'active' : ''
+                            }
+                            onClick={() => onSelect(item)}
+                          >
+                            {item}
+                          </button>
+                        )
                       ))}
                     </div>
                   )}
@@ -86,7 +98,7 @@ function DashboardLayout({
               )
             })}
 
-            <div className="sidebar-caption">Role workspace<br /><strong>{user.role}</strong></div>
+            <a className="portal-webmail" href="https://mail.google.com/" target="_blank" rel="noreferrer"><span aria-hidden="true">📧</span> BUET WebMail</a>
           </aside>
 
           <section className="biis-portal-content">

@@ -52,7 +52,8 @@ function AdminTeacherManagement() {
   }, [accessToken, filters])
 
   useEffect(() => {
-    loadTeachers()
+    const task = window.setTimeout(loadTeachers, 0)
+    return () => window.clearTimeout(task)
   }, [loadTeachers])
 
   useEffect(() => {

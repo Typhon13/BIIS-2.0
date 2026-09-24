@@ -12,6 +12,7 @@
     "admin:create": "node scripts/create-admin.js",
     "admin:reset": "node scripts/reset-admin.js",
     "db:seed-buet-departments": "node scripts/seed-buet-departments.js",
+    "db:seed-current-data": "node scripts/seed-current-data.js",
     "db:import-buet-teachers": "node scripts/import-buet-teachers.js",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
