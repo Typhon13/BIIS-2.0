@@ -163,35 +163,46 @@ export default function CourseSelection() {
               </tr>
             </thead>
             <tbody>
-              {availableCourses.map((offering) => (
-                <tr key={offering.offeringId}>
-                  <td className="biis-course-select">
-                    <input
-                      type="checkbox"
-                      id={`course-${offering.offeringId}`}
-                      checked={selectedCourseIds.includes(offering.offeringId)}
-                      onChange={() => handleToggleCourse(offering.offeringId)}
-                    />
-                  </td>
-                  <td>
-                    <label htmlFor={`course-${offering.offeringId}`}>
-                      {offering.course.code}
-                    </label>
-                  </td>
-                  <td>{offering.syllabusId || '—'}</td>
-                  <td>
-                    <label htmlFor={`course-${offering.offeringId}`}>
-                      {offering.course.title}
-                    </label>
-                  </td>
-                  <td className="biis-course-credit">
-                    {Number(offering.course.credit).toFixed(2)}
-                  </td>
-                  <td>
-                    {offering.section ? `Sec ${offering.section}` : ''}
-                  </td>
-                </tr>
-              ))}
+              {availableCourses.map((offering) => {
+                const isEligible = offering.meetsPrerequisites !== false;
+                
+                return (
+                  <tr key={offering.offeringId} className={!isEligible ? 'biis-course-ineligible' : ''}>
+                    <td className="biis-course-select">
+                      <input
+                        type="checkbox"
+                        id={`course-${offering.offeringId}`}
+                        checked={selectedCourseIds.includes(offering.offeringId)}
+                        onChange={() => handleToggleCourse(offering.offeringId)}
+                        disabled={!isEligible}
+                      />
+                    </td>
+                    <td>
+                      <label htmlFor={`course-${offering.offeringId}`}>
+                        {offering.course.code}
+                      </label>
+                    </td>
+                    <td>{offering.syllabusId || '—'}</td>
+                    <td>
+                      <label htmlFor={`course-${offering.offeringId}`}>
+                        {offering.course.title}
+                      </label>
+                    </td>
+                    <td className="biis-course-credit">
+                      {Number(offering.course.credit).toFixed(2)}
+                    </td>
+                    <td>
+                      {!isEligible ? (
+                        <span className="biis-course-error" style={{fontWeight: 'bold'}}>
+                          Prerequisites missing: {offering.missingPrerequisites?.join(', ')}
+                        </span>
+                      ) : (
+                        offering.section ? `Sec ${offering.section}` : ''
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
               <tr className="biis-course-total">
                 <td colSpan="4">Selected Credit Hours</td>
                 <td className="biis-course-credit">

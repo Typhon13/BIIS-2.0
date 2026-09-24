@@ -8,6 +8,7 @@ const errors = {
     400,
     'Enter a valid subject and supporting statement. Applications that request money also require a positive amount.',
   ],
+  PREREQUISITES_NOT_MET: [403, 'You have not completed the required prerequisite courses'],
   NOT_FOUND: [404, 'Resource not found'],
   FORBIDDEN: [403, 'Forbidden'],
   STUDENT_PROFILE_NOT_FOUND: [403, 'Student profile is unavailable'],
@@ -38,6 +39,7 @@ function handleError(error, res) {
   });
 }
 
+// Controller routes the request to the service
 async function listOfferings(req, res) {
   try {
     return res.json({

@@ -33,6 +33,11 @@ function AdminStudentManagement() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
+  // Prerequisites state
+  const [viewingRecordStudentId, setViewingRecordStudentId] = useState(null)
+  const [completedCourses, setCompletedCourses] = useState([])
+  const [isLoadingRecord, setIsLoadingRecord] = useState(false)
+
   const loadStudents = useCallback(async () => {
     setIsLoading(true)
     setError('')
@@ -178,6 +183,20 @@ function AdminStudentManagement() {
     setMessage('')
   }
 
+  async function viewAcademicRecord(student) {
+    setViewingRecordStudentId(student.studentId)
+    setIsLoadingRecord(true)
+    try {
+      const response = await adminApi.studentCompletions(accessToken, student.studentId)
+      setCompletedCourses(response.data)
+    } catch (err) {
+      setCompletedCourses([])
+      setError(getErrorMessage(err))
+    } finally {
+      setIsLoadingRecord(false)
+    }
+  }
+
   function cancelEdit() {
     setEditingStudentId('')
     setForm(emptyForm)
@@ -244,10 +263,88 @@ function AdminStudentManagement() {
       </form>
 
       <div className="admin-user-summary"><strong>{pagination.total}</strong><span>student{pagination.total === 1 ? '' : 's'} found</span></div>
-      <div className="admin-table-wrapper"><table className="admin-users-table"><thead><tr><th>Student ID</th><th>Name</th><th>Account</th><th>Department</th><th>Batch</th><th>Level / Term</th><th>Adviser</th><th>Status</th><th>Actions</th></tr></thead><tbody>
-        {isLoading ? <tr><td colSpan="9" className="admin-table-message">Loading students...</td></tr> : students.length === 0 ? <tr><td colSpan="9" className="admin-table-message">No students matched the selected filters.</td></tr> : students.map((student) => <tr key={student.studentId}><td><strong>{student.studentIdNumber}</strong><small>#{student.studentId}</small></td><td>{student.name}</td><td><strong>{student.username}</strong><small>{student.email}</small></td><td><strong>{student.departmentShortName || 'Not assigned'}</strong><small>{student.departmentName || ''}</small></td><td>{student.batchId ? `#${student.batchId} ${student.batchName || ''}` : 'Not assigned'}</td><td>{student.currentLevelTerm || 'Not specified'}</td><td>{student.adviserName || 'Unassigned'}</td><td><span className={`admin-status-badge ${student.accountStatus === 'ACTIVE' ? 'admin-status-active' : 'admin-status-inactive'}`}>{student.accountStatus}</span></td><td><button type="button" onClick={() => editStudent(student)} disabled={isSubmitting}>Edit</button></td></tr>)}
-      </tbody></table></div>
-      <div className="admin-pagination"><button type="button" disabled={isLoading || pagination.page <= 1} onClick={() => setFilters((current) => ({ ...current, page: current.page - 1 }))}>Previous</button><span>Page <strong>{pagination.page}</strong> of <strong>{Math.max(pagination.totalPages, 1)}</strong></span><button type="button" disabled={isLoading || pagination.totalPages === 0 || pagination.page >= pagination.totalPages} onClick={() => setFilters((current) => ({ ...current, page: current.page + 1 }))}>Next</button></div>
+      <div className="admin-table-wrapper">
+        <table className="admin-users-table">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Name</th>
+              <th>Account</th>
+              <th>Department</th>
+              <th>Batch</th>
+              <th>Level / Term</th>
+              <th>Adviser</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
+              <tr><td colSpan="9" className="admin-table-message">Loading students...</td></tr>
+            ) : students.length === 0 ? (
+              <tr><td colSpan="9" className="admin-table-message">No students matched the selected filters.</td></tr>
+            ) : students.map((student) => (
+              <tr key={student.studentId}>
+                <td><strong>{student.studentIdNumber}</strong><small>#{student.studentId}</small></td>
+                <td>{student.name}</td>
+                <td><strong>{student.username}</strong><small>{student.email}</small></td>
+                <td><strong>{student.departmentShortName || 'Not assigned'}</strong><small>{student.departmentName || ''}</small></td>
+                <td>{student.batchId ? `#${student.batchId} ${student.batchName || ''}` : 'Not assigned'}</td>
+                <td>{student.currentLevelTerm || 'Not specified'}</td>
+                <td>{student.adviserName || 'Unassigned'}</td>
+                <td><span className={`admin-status-badge ${student.accountStatus === 'ACTIVE' ? 'admin-status-active' : 'admin-status-inactive'}`}>{student.accountStatus}</span></td>
+                <td>
+                  <div className="admin-filter-actions admin-inline-actions">
+                    <button type="button" onClick={() => editStudent(student)} disabled={isSubmitting}>Edit</button>
+                    <button type="button" className="admin-secondary-button" onClick={() => viewAcademicRecord(student)}>Records</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="admin-pagination">
+        <button type="button" disabled={isLoading || pagination.page <= 1} onClick={() => setFilters((current) => ({ ...current, page: current.page - 1 }))}>Previous</button>
+        <span>Page <strong>{pagination.page}</strong> of <strong>{Math.max(pagination.totalPages, 1)}</strong></span>
+        <button type="button" disabled={isLoading || pagination.totalPages === 0 || pagination.page >= pagination.totalPages} onClick={() => setFilters((current) => ({ ...current, page: current.page + 1 }))}>Next</button>
+      </div>
+
+      {viewingRecordStudentId && (
+        <div className="admin-user-modal-backdrop" onClick={() => setViewingRecordStudentId(null)}>
+          <section className="admin-user-modal" onClick={e => e.stopPropagation()}>
+            <div className="admin-modal-heading">
+              <h2>Academic Completions</h2>
+              <button type="button" onClick={() => setViewingRecordStudentId(null)}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              {isLoadingRecord ? <p>Loading completed courses...</p> : (
+                completedCourses.length === 0 ? <p>No completed courses found for this student.</p> : (
+                  <table className="admin-users-table">
+                    <thead>
+                      <tr>
+                        <th>Course Code</th>
+                        <th>Title</th>
+                        <th>Credits</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {completedCourses.map(course => (
+                        <tr key={course.courseId}>
+                          <td><strong>{course.code}</strong></td>
+                          <td>{course.title}</td>
+                          <td>{course.credit}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )
+              )}
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   )
 }
