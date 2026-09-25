@@ -12,7 +12,10 @@ const legacyBaselineMigrations = new Set([
 ]);
 
 function checksum(value) {
-  return crypto.createHash('sha256').update(value).digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(value.replace(/\r\n/g, '\n'))
+    .digest('hex');
 }
 
 async function ensureMigrationTable(client) {
@@ -92,6 +95,10 @@ async function runMigrations() {
       const previousHash = applied.get(file);
 
       if (previousHash) {
+        if (legacyBaselineMigrations.has(file)) {
+          continue;
+        }
+
         if (previousHash !== hash) {
           throw new Error(
             `Migration ${file} changed after it was applied. Create a new migration instead.`

@@ -1,0 +1,752 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R] /Count 7 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 2228 >>
+stream
+BT
+/F1 9 Tf
+50 800 Td
+12 TL
+(BIIS 2.0 File Summary) Tj
+T*
+(Generated: 2026-09-25) Tj
+T*
+() Tj
+T*
+(Review Notes) Tj
+T*
+(- Frontend lint and production build passed during this audit.) Tj
+T*
+(- Backend JavaScript syntax checks passed.) Tj
+T*
+(- Backend test suite requires TEST_DB_NAME=biis_test and could not run in this local environment.) Tj
+T*
+(- Fixed duplicate script keys in server/package.json during this audit.) Tj
+T*
+() Tj
+T*
+(File Summaries) Tj
+T*
+(.gitignore: Project file used by the BIIS application.) Tj
+T*
+() Tj
+T*
+(.postman/resources.yaml: YAML configuration or exported API tooling configuration.) Tj
+T*
+() Tj
+T*
+(client/.env.example: Project file used by the BIIS application.) Tj
+T*
+() Tj
+T*
+(client/.gitignore: Project file used by the BIIS application.) Tj
+T*
+() Tj
+T*
+(client/eslint.config.js: ESLint configuration for frontend static analysis.) Tj
+T*
+() Tj
+T*
+(client/fix.cjs: Project file used by the BIIS application.) Tj
+T*
+() Tj
+T*
+(client/index.html: HTML shell loaded by the Vite React client.) Tj
+T*
+() Tj
+T*
+(client/package-lock.json: Locks exact npm dependency versions for reproducible installs.) Tj
+T*
+() Tj
+T*
+(client/package.json: Defines package metadata, dependencies, and npm scripts for this workspace.) Tj
+T*
+() Tj
+T*
+(client/public/favicon.svg: Static frontend asset used by the Vite/React client.) Tj
+T*
+() Tj
+T*
+(client/public/icons.svg: Static frontend asset used by the Vite/React client.) Tj
+T*
+() Tj
+T*
+(client/README.md: Markdown documentation for project usage, requirements, tests, or demos.) Tj
+T*
+() Tj
+T*
+(client/services/api.js: Business logic layer for Api.) Tj
+T*
+() Tj
+T*
+(client/src/App.css: Main application stylesheet for login, dashboard, admin, student, teacher, and modal UI.) Tj
+T*
+() Tj
+T*
+(client/src/App.jsx: Top-level React route definitions.) Tj
+T*
+() Tj
+T*
+(client/src/assets/buet-logo.png: Static frontend asset used by the Vite/React client.) Tj
+T*
+() Tj
+T*
+(client/src/assets/hero.png: Static frontend asset used by the Vite/React client.) Tj
+T*
+() Tj
+T*
+(client/src/assets/react.svg: Static frontend asset used by the Vite/React client.) Tj
+T*
+() Tj
+T*
+(client/src/assets/vite.svg: Static frontend asset used by the Vite/React client.) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 2637 >>
+stream
+BT
+/F1 9 Tf
+50 800 Td
+12 TL
+(client/src/components/admin/AdminAdviserManagement.jsx: React admin UI component for Admin AdviserManagement.) Tj
+T*
+() Tj
+T*
+(client/src/components/admin/AdminCourseOfferingManagement.jsx: React admin UI component for Admin) Tj
+T*
+(CourseOfferingManagement.) Tj
+T*
+() Tj
+T*
+(client/src/components/admin/AdminDepartmentManagement.jsx: React admin UI component for Admin) Tj
+T*
+(DepartmentManagement.) Tj
+T*
+() Tj
+T*
+(client/src/components/admin/AdminStudentManagement.jsx: React admin UI component for Admin StudentManagement.) Tj
+T*
+() Tj
+T*
+(client/src/components/admin/AdminStudentServices.jsx: React admin UI component for Admin StudentServices.) Tj
+T*
+() Tj
+T*
+(client/src/components/admin/AdminTeacherManagement.jsx: React admin UI component for Admin TeacherManagement.) Tj
+T*
+() Tj
+T*
+(client/src/components/admin/AdminUserManagement.jsx: React admin UI component for Admin UserManagement.) Tj
+T*
+() Tj
+T*
+(client/src/components/BiisLayout.jsx: Shared React UI component for BiisLayout.) Tj
+T*
+() Tj
+T*
+(client/src/components/DashboardLayout.jsx: Shared React UI component for DashboardLayout.) Tj
+T*
+() Tj
+T*
+(client/src/components/ProtectedRoute.jsx: Shared React UI component for ProtectedRoute.) Tj
+T*
+() Tj
+T*
+(client/src/components/RoleAcademicDashboard.jsx: Shared React UI component for RoleAcademicDashboard.) Tj
+T*
+() Tj
+T*
+(client/src/components/student/ScholarshipApplication.jsx: React student UI component for ScholarshipApplication.) Tj
+T*
+() Tj
+T*
+(client/src/components/student/StudentApplication.jsx: React student UI component for StudentApplication.) Tj
+T*
+() Tj
+T*
+(client/src/components/student/StudentDues.jsx: React student UI component for StudentDues.) Tj
+T*
+() Tj
+T*
+(client/src/components/StudentDashboard.jsx: Shared React UI component for StudentDashboard.) Tj
+T*
+() Tj
+T*
+(client/src/components/TeacherAdvising.jsx: Shared React UI component for TeacherAdvising.) Tj
+T*
+() Tj
+T*
+(client/src/components/TeacherDashboard.jsx: Shared React UI component for TeacherDashboard.) Tj
+T*
+() Tj
+T*
+(client/src/context/AuthContext.jsx: React auth provider that stores current user/access token and exposes) Tj
+T*
+(login/logout helpers.) Tj
+T*
+() Tj
+T*
+(client/src/index.css: Global browser/body CSS baseline.) Tj
+T*
+() Tj
+T*
+(client/src/main.jsx: React entry point that mounts the app.) Tj
+T*
+() Tj
+T*
+(client/src/pages/CourseSelection.jsx: React page component for CourseSelection.) Tj
+T*
+() Tj
+T*
+(client/src/pages/DashboardPage.jsx: React page component for Dashboard.) Tj
+T*
+() Tj
+T*
+(client/src/pages/ForgotPasswordPage.jsx: React page component for ForgotPassword.) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 2538 >>
+stream
+BT
+/F1 9 Tf
+50 800 Td
+12 TL
+() Tj
+T*
+(client/src/pages/LoginPage.jsx: React page component for Login.) Tj
+T*
+() Tj
+T*
+(client/src/pages/RegisteredCourses.jsx: React page component for RegisteredCourses.) Tj
+T*
+() Tj
+T*
+(client/src/pages/RegisterPage.jsx: React page component for Register.) Tj
+T*
+() Tj
+T*
+(client/src/pages/ResetPasswordPage.jsx: React page component for ResetPassword.) Tj
+T*
+() Tj
+T*
+(client/src/pages/UnauthorizedPage.jsx: React page component for Unauthorized.) Tj
+T*
+() Tj
+T*
+(client/src/services/api.js: Frontend API client with auth refresh handling and role-specific endpoint wrappers.) Tj
+T*
+() Tj
+T*
+(client/src/utils/date.js: Shared utility helpers for Date.) Tj
+T*
+() Tj
+T*
+(client/vite.config.js: Vite build and development-server configuration.) Tj
+T*
+() Tj
+T*
+(DEMO_GUIDE.md: Markdown documentation for project usage, requirements, tests, or demos.) Tj
+T*
+() Tj
+T*
+(package-lock.json: Locks exact npm dependency versions for reproducible installs.) Tj
+T*
+() Tj
+T*
+(postman/globals/workspace.globals.yaml: YAML configuration or exported API tooling configuration.) Tj
+T*
+() Tj
+T*
+(REQUIREMENTS_MATRIX.md: Markdown documentation for project usage, requirements, tests, or demos.) Tj
+T*
+() Tj
+T*
+(server/.env: Project file used by the BIIS application.) Tj
+T*
+() Tj
+T*
+(server/.env.example: Project file used by the BIIS application.) Tj
+T*
+() Tj
+T*
+(server/db/database.js: Initializes or resets database schema helpers used by tests and migration tooling.) Tj
+T*
+() Tj
+T*
+(server/db/init.js: Runs the full schema.sql manually against the configured database.) Tj
+T*
+() Tj
+T*
+(server/db/migrate.js: Runs pending SQL migrations, initializes fresh schemas, and records applied migrations.) Tj
+T*
+() Tj
+T*
+(server/db/migrations/20260925_course_prerequisites_and_completions.sql: Database migration that changes or) Tj
+T*
+(repairs schema/data for existing PostgreSQL databases.) Tj
+T*
+() Tj
+T*
+(server/db/migrations/20260925_student_applications_dues.sql: Database migration that changes or repairs) Tj
+T*
+(schema/data for existing PostgreSQL databases.) Tj
+T*
+() Tj
+T*
+(server/db/migrations/20260925_student_dues_legacy_schema_fix.sql: Database migration that changes or repairs) Tj
+T*
+(schema/data for existing PostgreSQL databases.) Tj
+T*
+() Tj
+T*
+(server/db/migrations/20260925_student_dues_repair.sql: Database migration that changes or repairs schema/data) Tj
+T*
+(for existing PostgreSQL databases.) Tj
+T*
+() Tj
+T*
+(server/db/schema.sql: Canonical full PostgreSQL schema for a fresh BIIS database.) Tj
+T*
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 2589 >>
+stream
+BT
+/F1 9 Tf
+50 800 Td
+12 TL
+() Tj
+T*
+(server/package-lock.json: Locks exact npm dependency versions for reproducible installs.) Tj
+T*
+() Tj
+T*
+(server/package.json: Defines package metadata, dependencies, and npm scripts for this workspace.) Tj
+T*
+() Tj
+T*
+(server/scripts/create-admin.js: Command-line script for Create Admin maintenance, seeding, importing, repair, or) Tj
+T*
+(demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/demo-api.js: Command-line script for Demo Api maintenance, seeding, importing, repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/import-buet-teachers.js: Command-line script for Import Buet Teachers maintenance, seeding,) Tj
+T*
+(importing, repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/migrate-course-approval-multi-teacher.js: Command-line script for Migrate Course Approval Multi) Tj
+T*
+(Teacher maintenance, seeding, importing, repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/migrate-student-services.js: Command-line script for Migrate Student Services maintenance,) Tj
+T*
+(seeding, importing, repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/repair-student-dues-legacy-schema.js: Command-line script for Repair Student Dues Legacy Schema) Tj
+T*
+(maintenance, seeding, importing, repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/repair-student-dues.js: Command-line script for Repair Student Dues maintenance, seeding,) Tj
+T*
+(importing, repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/reset-admin.js: Command-line script for Reset Admin maintenance, seeding, importing, repair, or) Tj
+T*
+(demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/seed-buet-departments.js: Command-line script for Seed Buet Departments maintenance, seeding,) Tj
+T*
+(importing, repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/seed-current-data.js: Command-line script for Seed Current Data maintenance, seeding, importing,) Tj
+T*
+(repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/seed-demo.js: Command-line script for Seed Demo maintenance, seeding, importing, repair, or) Tj
+T*
+(demos.) Tj
+T*
+() Tj
+T*
+(server/scripts/seed-full-demo.js: Command-line script for Seed Full Demo maintenance, seeding, importing,) Tj
+T*
+(repair, or demos.) Tj
+T*
+() Tj
+T*
+(server/src/app.js: Creates the Express app, configures CORS, JSON parsing, cookies, routes, 404 handling, and) Tj
+T*
+(the global error handler.) Tj
+T*
+() Tj
+T*
+(server/src/config/auth.config.js: Centralizes JWT, refresh-token lifetime, bcrypt, and secure refresh-cookie) Tj
+T*
+(settings.) Tj
+T*
+() Tj
+T*
+(server/src/config/db.js: Configures the PostgreSQL connection pool and chooses the normal or test database) Tj
+T*
+(safely.) Tj
+T*
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 2486 >>
+stream
+BT
+/F1 9 Tf
+50 800 Td
+12 TL
+() Tj
+T*
+(server/src/config/mail.config.js: Reads SMTP and password-reset email settings from environment variables.) Tj
+T*
+() Tj
+T*
+(server/src/controllers/admin-academic.controller.js: HTTP controller layer for Admin Academic; maps requests to) Tj
+T*
+(services and responses.) Tj
+T*
+() Tj
+T*
+(server/src/controllers/admin-student-services.controller.js: HTTP controller layer for Admin Student Services;) Tj
+T*
+(maps requests to services and responses.) Tj
+T*
+() Tj
+T*
+(server/src/controllers/admin.controller.js: HTTP controller layer for Admin; maps requests to services and) Tj
+T*
+(responses.) Tj
+T*
+() Tj
+T*
+(server/src/controllers/auth.controller.js: HTTP controller layer for Auth; maps requests to services and) Tj
+T*
+(responses.) Tj
+T*
+() Tj
+T*
+(server/src/controllers/password-reset.controller.js: HTTP controller layer for Password Reset; maps requests to) Tj
+T*
+(services and responses.) Tj
+T*
+() Tj
+T*
+(server/src/controllers/student.controller.js: HTTP controller layer for Student; maps requests to services and) Tj
+T*
+(responses.) Tj
+T*
+() Tj
+T*
+(server/src/controllers/teacher.controller.js: HTTP controller layer for Teacher; maps requests to services and) Tj
+T*
+(responses.) Tj
+T*
+() Tj
+T*
+(server/src/middleware/auth.middleware.js: Express middleware for Auth.) Tj
+T*
+() Tj
+T*
+(server/src/middleware/authorize.middleware.js: Express middleware for Authorize.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/academic.repository.js: Database access layer for Academic.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/admin-bootstrap.repository.js: Database access layer for Admin Bootstrap.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/admin-student-services.repository.js: Database access layer for Admin Student Services.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/admin.repository.js: Database access layer for Admin.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/password-reset.repository.js: Database access layer for Password Reset.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/session.repository.js: Database access layer for Session.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/student.repository.js: Database access layer for Student.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/teacher.repository.js: Database access layer for Teacher.) Tj
+T*
+() Tj
+T*
+(server/src/repositories/user.repository.js: Database access layer for User.) Tj
+T*
+() Tj
+T*
+(server/src/routes/admin-academic.routes.js: Express route definitions for Admin Academic endpoints.) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 2410 >>
+stream
+BT
+/F1 9 Tf
+50 800 Td
+12 TL
+(server/src/routes/admin-student-services.routes.js: Express route definitions for Admin Student Services) Tj
+T*
+(endpoints.) Tj
+T*
+() Tj
+T*
+(server/src/routes/admin.routes.js: Express route definitions for Admin endpoints.) Tj
+T*
+() Tj
+T*
+(server/src/routes/auth.routes.js: Express route definitions for Auth endpoints.) Tj
+T*
+() Tj
+T*
+(server/src/routes/student.routes.js: Express route definitions for Student endpoints.) Tj
+T*
+() Tj
+T*
+(server/src/routes/teacher.routes.js: Express route definitions for Teacher endpoints.) Tj
+T*
+() Tj
+T*
+(server/src/server.js: Starts the backend server after checking database connectivity.) Tj
+T*
+() Tj
+T*
+(server/src/services/admin-academic.service.js: Business logic layer for Admin Academic.) Tj
+T*
+() Tj
+T*
+(server/src/services/admin-bootstrap.service.js: Business logic layer for Admin Bootstrap.) Tj
+T*
+() Tj
+T*
+(server/src/services/admin-student-services.service.js: Business logic layer for Admin Student Services.) Tj
+T*
+() Tj
+T*
+(server/src/services/admin.service.js: Business logic layer for Admin.) Tj
+T*
+() Tj
+T*
+(server/src/services/auth.service.js: Business logic layer for Auth.) Tj
+T*
+() Tj
+T*
+(server/src/services/mail.service.js: Business logic layer for Mail.) Tj
+T*
+() Tj
+T*
+(server/src/services/password-reset.service.js: Business logic layer for Password Reset.) Tj
+T*
+() Tj
+T*
+(server/src/services/student.service.js: Business logic layer for Student.) Tj
+T*
+() Tj
+T*
+(server/src/services/teacher.service.js: Business logic layer for Teacher.) Tj
+T*
+() Tj
+T*
+(server/src/utils/ownership.utils.js: Shared utility helpers for Ownership.) Tj
+T*
+() Tj
+T*
+(server/src/utils/password.utils.js: Shared utility helpers for Password.) Tj
+T*
+() Tj
+T*
+(server/src/utils/token.utils.js: Shared utility helpers for Token.) Tj
+T*
+() Tj
+T*
+(server/src/validators/academic.validator.js: Request validation rules for Academic.) Tj
+T*
+() Tj
+T*
+(server/src/validators/admin.validator.js: Request validation rules for Admin.) Tj
+T*
+() Tj
+T*
+(server/src/validators/auth.validator.js: Request validation rules for Auth.) Tj
+T*
+() Tj
+T*
+(server/src/validators/password-reset.validator.js: Request validation rules for Password Reset.) Tj
+T*
+() Tj
+T*
+(server/src/validators/student.validator.js: Request validation rules for Student.) Tj
+T*
+() Tj
+T*
+(server/src/validators/teacher.validator.js: Request validation rules for Teacher.) Tj
+T*
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 1380 >>
+stream
+BT
+/F1 9 Tf
+50 800 Td
+12 TL
+() Tj
+T*
+(server/test/academic/academic-management.test.js: Automated test or test helper for Academic Management.) Tj
+T*
+() Tj
+T*
+(server/test/admin/admin-bootstrap.test.js: Automated test or test helper for Admin Bootstrap.) Tj
+T*
+() Tj
+T*
+(server/test/admin/admin-management.test.js: Automated test or test helper for Admin Management.) Tj
+T*
+() Tj
+T*
+(server/test/admin/admin-user-creation.test.js: Automated test or test helper for Admin User Creation.) Tj
+T*
+() Tj
+T*
+(server/test/admin/department-management.test.js: Automated test or test helper for Department Management.) Tj
+T*
+() Tj
+T*
+(server/test/auth/auth.test.js: Automated test or test helper for Auth.) Tj
+T*
+() Tj
+T*
+(server/test/auth/password-change.test.js: Automated test or test helper for Password Change.) Tj
+T*
+() Tj
+T*
+(server/test/auth/password-reset.test.js: Automated test or test helper for Password Reset.) Tj
+T*
+() Tj
+T*
+(server/test/database/database-safety.test.js: Automated test or test helper for Database Safety.) Tj
+T*
+() Tj
+T*
+(server/test/helpers/check-test-database.js: Automated test or test helper for Check Test Database.) Tj
+T*
+() Tj
+T*
+(server/test/helpers/test-database.js: Automated test or test helper for Test Database.) Tj
+T*
+() Tj
+T*
+(server/test/README.md: Markdown documentation for project usage, requirements, tests, or demos.) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 16 0 R >>
+endobj
+xref
+0 18
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000155 00000 n 
+0000000225 00000 n 
+0000002505 00000 n 
+0000002631 00000 n 
+0000005320 00000 n 
+0000005446 00000 n 
+0000008036 00000 n 
+0000008162 00000 n 
+0000010804 00000 n 
+0000010932 00000 n 
+0000013471 00000 n 
+0000013599 00000 n 
+0000016062 00000 n 
+0000016190 00000 n 
+0000017623 00000 n 
+trailer
+<< /Size 18 /Root 1 0 R >>
+startxref
+17751
+%%EOF
