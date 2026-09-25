@@ -62,6 +62,17 @@ function mapStudent(row) {
   };
 }
 
+function mapCompletedCourse(row) {
+  return {
+    courseId: String(row.course_id),
+    code: row.course_code,
+    title: row.course_title,
+    credit: Number(row.credit),
+    type: row.course_type,
+    completedAt: row.completed_at,
+  };
+}
+
 function mapProgram(row) {
   return {
     programId: String(row.program_id),
@@ -922,6 +933,68 @@ async function updateStudent(studentId, { username, email, studentIdNumber, name
   }
 }
 
+async function listStudentCompletions(studentId) {
+  const student = await db.query(
+    'SELECT student_id FROM students WHERE student_id = $1',
+    [studentId],
+  );
+
+  if (!student.rows[0]) return null;
+
+  const result = await db.query(
+    `SELECT c.course_id, c.course_code, c.course_title, c.credit, c.course_type,
+            scc.completed_at
+       FROM student_course_completions scc
+       JOIN courses c ON c.course_id = scc.course_id
+      WHERE scc.student_id = $1
+      ORDER BY c.course_code ASC`,
+    [studentId],
+  );
+
+  return result.rows.map(mapCompletedCourse);
+}
+
+async function replaceStudentCompletions(studentId, courseIds) {
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const student = await client.query(
+      'SELECT student_id FROM students WHERE student_id = $1 FOR UPDATE',
+      [studentId],
+    );
+
+    if (!student.rows[0]) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    await client.query(
+      'DELETE FROM student_course_completions WHERE student_id = $1',
+      [studentId],
+    );
+
+    if (courseIds.length) {
+      await client.query(
+        `INSERT INTO student_course_completions (student_id, course_id)
+         SELECT $1, course_id
+           FROM unnest($2::bigint[]) AS course_id`,
+        [studentId, courseIds],
+      );
+    }
+
+    await client.query('COMMIT');
+    return listStudentCompletions(studentId);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    if (error.code === '23503') throw new Error('COURSE_NOT_FOUND');
+    throw new Error('STUDENT_COMPLETIONS_UPDATE_FAILED');
+  } finally {
+    client.release();
+  }
+}
+
 async function createDepartment({ deptName, deptShortName }) {
   const client = await db.pool.connect();
 
@@ -1038,6 +1111,8 @@ module.exports = {
   createBatch,
   createStudent,
   updateStudent,
+  listStudentCompletions,
+  replaceStudentCompletions,
   createDepartment,
   updateDepartment,
 };

@@ -238,6 +238,43 @@ async function updateStudent(studentIdValue, input) {
   return adminRepository.updateStudent(studentIdValue, { ...normalized, passwordHash });
 }
 
+function parseStudentId(value) {
+  if (!/^[1-9]\d*$/.test(String(value))) throw new Error('INVALID_STUDENT_INPUT');
+  return String(value);
+}
+
+function normalizeCourseIds(values) {
+  if (!Array.isArray(values) || values.length > 200) {
+    throw new Error('INVALID_COURSE_COMPLETIONS');
+  }
+
+  return [
+    ...new Set(values.map((value) => {
+      const normalized = String(value || '').trim();
+      if (!/^[1-9]\d*$/.test(normalized)) {
+        throw new Error('INVALID_COURSE_COMPLETIONS');
+      }
+      return normalized;
+    })),
+  ];
+}
+
+async function listStudentCompletions(studentIdValue) {
+  const completions = await adminRepository.listStudentCompletions(
+    parseStudentId(studentIdValue)
+  );
+
+  if (!completions) return null;
+  return completions;
+}
+
+async function replaceStudentCompletions(studentIdValue, input = {}) {
+  const studentId = parseStudentId(studentIdValue);
+  const courseIds = normalizeCourseIds(input.courseIds);
+
+  return adminRepository.replaceStudentCompletions(studentId, courseIds);
+}
+
 async function listPrograms(query) {
   const deptId = query.deptId === undefined || query.deptId === '' ? undefined : parseDepartmentId(String(query.deptId));
   return adminRepository.listPrograms({ deptId });
@@ -332,6 +369,8 @@ module.exports = {
   createBatch,
   createStudent,
   updateStudent,
+  listStudentCompletions,
+  replaceStudentCompletions,
   createDepartment,
   updateDepartment,
   STATUSES,

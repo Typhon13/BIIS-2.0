@@ -16,6 +16,7 @@ function mapCourse(row) {
     credit: Number(row.credit),
     type: row.course_type,
     totalMarks: Number(row.total_marks),
+    prerequisites: row.prerequisites || [],
     department: row.dept_id
       ? {
           departmentId: String(row.dept_id),
@@ -65,6 +66,7 @@ function mapOffering(row) {
       credit: Number(row.credit),
       type: row.course_type,
       totalMarks: Number(row.total_marks),
+      prerequisites: row.prerequisites || [],
     },
     term: {
       termId: String(row.semester_id),
@@ -129,6 +131,16 @@ async function findDepartment(departmentId) {
   return result.rows[0] || null;
 }
 
+async function setCoursePrerequisites(courseId, prerequisiteIds, client) {
+  await client.query('DELETE FROM course_prerequisites WHERE course_id = $1', [courseId]);
+  
+  if (prerequisiteIds && prerequisiteIds.length > 0) {
+    const values = prerequisiteIds.map((id, index) => `($1, $${index + 2})`).join(', ');
+    const params = [courseId, ...prerequisiteIds];
+    await client.query(`INSERT INTO course_prerequisites (course_id, prereq_course_id) VALUES ${values}`, params);
+  }
+}
+
 async function listCourses() {
   const result = await db.query(
     `SELECT
@@ -140,7 +152,10 @@ async function listCourses() {
         c.total_marks,
         d.dept_id,
         d.dept_name,
-        d.dept_short_name
+        d.dept_short_name,
+        COALESCE(
+          (SELECT json_agg(prereq_course_id) FROM course_prerequisites WHERE course_id = c.course_id), '[]'::json
+        ) AS prerequisites
        FROM courses c
        JOIN departments d ON d.dept_id = c.dept_id
       ORDER BY c.course_code ASC`
@@ -156,6 +171,7 @@ async function createCourse({
   type,
   totalMarks,
   departmentId,
+  prerequisites
 }) {
   const client = await db.pool.connect();
 
@@ -176,6 +192,12 @@ async function createCourse({
       [code, title, credit, type, totalMarks, departmentId]
     );
 
+    const newCourseId = inserted.rows[0].course_id;
+
+    if (prerequisites && prerequisites.length > 0) {
+      await setCoursePrerequisites(newCourseId, prerequisites, client);
+    }
+
     const course = await client.query(
       `SELECT
           c.course_id,
@@ -186,11 +208,14 @@ async function createCourse({
           c.total_marks,
           d.dept_id,
           d.dept_name,
-          d.dept_short_name
+          d.dept_short_name,
+          COALESCE(
+            (SELECT json_agg(prereq_course_id) FROM course_prerequisites WHERE course_id = c.course_id), '[]'::json
+          ) AS prerequisites
          FROM courses c
          JOIN departments d ON d.dept_id = c.dept_id
         WHERE c.course_id = $1`,
-      [inserted.rows[0].course_id]
+      [newCourseId]
     );
 
     await client.query('COMMIT');
@@ -219,7 +244,7 @@ async function findCourse(courseId) {
 
 async function updateCourse(
   courseId,
-  { code, title, credit, type, totalMarks, departmentId }
+  { code, title, credit, type, totalMarks, departmentId, prerequisites }
 ) {
   const client = await db.pool.connect();
 
@@ -244,6 +269,8 @@ async function updateCourse(
       return null;
     }
 
+    await setCoursePrerequisites(courseId, prerequisites || [], client);
+
     const updated = await client.query(
       `SELECT
           c.course_id,
@@ -254,7 +281,10 @@ async function updateCourse(
           c.total_marks,
           d.dept_id,
           d.dept_name,
-          d.dept_short_name
+          d.dept_short_name,
+          COALESCE(
+            (SELECT json_agg(prereq_course_id) FROM course_prerequisites WHERE course_id = c.course_id), '[]'::json
+          ) AS prerequisites
          FROM courses c
          JOIN departments d ON d.dept_id = c.dept_id
         WHERE c.course_id = $1`,
@@ -402,6 +432,9 @@ const offeringSelect = `
       c.credit,
       c.course_type,
       c.total_marks,
+      COALESCE(
+        (SELECT json_agg(prereq_course_id) FROM course_prerequisites WHERE course_id = c.course_id), '[]'::json
+      ) AS prerequisites,
       s.semester_name,
       s.academic_year,
       s.start_date,

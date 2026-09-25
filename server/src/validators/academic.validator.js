@@ -40,13 +40,15 @@ const departmentRules = () => [
 ];
 
 const courseRules = () => [
-  allowedFields(['code', 'title', 'credit', 'type', 'totalMarks', 'departmentId']),
+  allowedFields(['code', 'title', 'credit', 'type', 'totalMarks', 'departmentId', 'prerequisites']),
   body('code').isString().trim().isLength({ min: 1, max: 30 }),
   body('title').isString().trim().isLength({ min: 1, max: 200 }),
   body('credit').isFloat({ gt: 0 }).withMessage('Credit must be greater than zero'),
   body('type').isIn(['THEORY', 'SESSIONAL']).withMessage('Type must be THEORY or SESSIONAL'),
   body('totalMarks').isFloat({ gt: 0 }).withMessage('Total marks must be greater than zero'),
   body('departmentId').isInt({ min: 1 }),
+  body('prerequisites').optional().isArray({ max: 20 }),
+  body('prerequisites.*').optional().isInt({ min: 1 }),
 ];
 
 const courseIdRules = () => [idParam('courseId'), ...courseRules()];

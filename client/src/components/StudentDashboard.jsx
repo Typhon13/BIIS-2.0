@@ -103,10 +103,16 @@ export default function StudentDashboard({
   const [message, setMessage] =
     useState('')
 
-  const loadAll = useCallback(
+const loadAll = useCallback(
     async () => {
       setLoading(true)
       setError('')
+
+      const safeFetchArray = (apiCall) => 
+        apiCall.catch((err) => { console.error(err); return { data: [] }; });
+        
+      const safeFetchProfile = (apiCall) => 
+        apiCall.catch((err) => { console.error(err); return { data: null }; });
 
       try {
         const [
@@ -117,29 +123,12 @@ export default function StudentDashboard({
           profile,
           calendar,
         ] = await Promise.all([
-          academicApi.studentOfferings(
-            accessToken
-          ),
-
-          academicApi.studentEnrollments(
-            accessToken
-          ),
-
-          academicApi.studentResults(
-            accessToken
-          ),
-
-          academicApi.studentNotices(
-            accessToken
-          ),
-
-          academicApi.studentProfile(
-            accessToken
-          ),
-
-          academicApi.studentCalendar(
-            accessToken
-          ),
+          safeFetchArray(academicApi.studentOfferings(accessToken)),
+          safeFetchArray(academicApi.studentEnrollments(accessToken)),
+          safeFetchArray(academicApi.studentResults(accessToken)),
+          safeFetchArray(academicApi.studentNotices(accessToken)),
+          safeFetchProfile(academicApi.studentProfile(accessToken)),
+          safeFetchArray(academicApi.studentCalendar(accessToken)),
         ])
 
         setData({

@@ -273,6 +273,23 @@ const updateStudentRules = () => [
   body('confirmPassword').custom((value, { req }) => !req.body.password || value === req.body.password).withMessage('Passwords do not match'),
 ];
 
+const studentIdRules = () => [
+  param('studentId').matches(/^[1-9]\d*$/),
+];
+
+const studentCompletionListRules = () => studentIdRules();
+
+const studentCompletionRules = () => [
+  ...studentIdRules(),
+  body().custom((value) => {
+    const unexpected = Object.keys(value || {}).find((field) => field !== 'courseIds');
+    if (unexpected) throw new Error(`${unexpected} is not allowed`);
+    return true;
+  }),
+  body('courseIds').isArray({ max: 200 }),
+  body('courseIds.*').isInt({ min: 1 }),
+];
+
 const statusRules = () => [
   ...userIdRules(),
 
@@ -349,6 +366,8 @@ module.exports = {
   createBatchRules,
   createStudentRules,
   updateStudentRules,
+  studentCompletionListRules,
+  studentCompletionRules,
   statusRules,
   roleRules,
   createDepartmentRules,

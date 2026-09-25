@@ -480,6 +480,13 @@ export const adminApi = {
       }
     )
   },
+  
+  studentCompletions(accessToken, studentId) {
+    return authorized(
+      `/admin/students/${studentId}/completions`,
+      accessToken
+    )
+  },
 }
 
 export const academicApi = {

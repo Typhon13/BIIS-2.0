@@ -223,59 +223,36 @@ function AdminAcademic({
     seatCapacity: '30',
   })
 
-  const loadAll = useCallback(
+const loadAll = useCallback(
     async () => {
       setLoading(true)
       setError('')
 
+      // Helper to prevent a single failure from crashing the whole page
+      const safeFetch = (apiCall) => 
+        apiCall.catch((err) => {
+          console.error(err);
+          // Return a fallback so resultArray() processes it as an empty array safely
+          return { data: [] }; 
+        });
+
       try {
-        const responses =
-          await Promise.all([
-            academicApi
-              .listDepartments(
-                accessToken
-              ),
+        const responses = await Promise.all([
+          safeFetch(academicApi.listDepartments(accessToken)),
+          safeFetch(academicApi.listCourses(accessToken)),
+          safeFetch(academicApi.listTerms(accessToken)),
+          safeFetch(academicApi.listTeachers(accessToken)),
+          safeFetch(academicApi.listOfferings(accessToken)),
+        ])
 
-            academicApi.listCourses(
-              accessToken
-            ),
-
-            academicApi.listTerms(
-              accessToken
-            ),
-
-            academicApi.listTeachers(
-              accessToken
-            ),
-
-            academicApi.listOfferings(
-              accessToken
-            ),
-          ])
-
-        setDepartments(
-          resultArray(responses[0])
-        )
-
-        setCourses(
-          resultArray(responses[1])
-        )
-
-        setTerms(
-          resultArray(responses[2])
-        )
-
-        setTeachers(
-          resultArray(responses[3])
-        )
-
-        setOfferings(
-          resultArray(responses[4])
-        )
+        setDepartments(resultArray(responses[0]))
+        setCourses(resultArray(responses[1]))
+        setTerms(resultArray(responses[2]))
+        setTeachers(resultArray(responses[3]))
+        setOfferings(resultArray(responses[4]))
+        
       } catch (requestError) {
-        setError(
-          errorMessage(requestError)
-        )
+        setError(errorMessage(requestError))
       } finally {
         setLoading(false)
       }
