@@ -533,6 +533,31 @@ CREATE INDEX ix_students_dept_id ON students(dept_id);
 CREATE INDEX ix_students_batch_id ON students(batch_id);
 CREATE INDEX ix_students_adviser_id ON students(adviser_id);
 
+-- Admin-maintained course completion records used for prerequisite checks.
+CREATE TABLE student_course_completions (
+    student_id       BIGINT NOT NULL,
+    course_id        BIGINT NOT NULL,
+    completed_at     TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_student_course_completions
+        PRIMARY KEY (student_id, course_id),
+
+    CONSTRAINT fk_student_course_completions_student
+        FOREIGN KEY (student_id)
+        REFERENCES students(student_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_student_course_completions_course
+        FOREIGN KEY (course_id)
+        REFERENCES courses(course_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
+);
+
+CREATE INDEX ix_student_course_completions_course
+    ON student_course_completions(course_id);
+
 CREATE OR REPLACE FUNCTION validate_student_academic_links()
 RETURNS TRIGGER
 LANGUAGE plpgsql

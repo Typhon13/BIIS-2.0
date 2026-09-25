@@ -33,6 +33,9 @@ function errorResponse(error, res) {
     DUPLICATE_STUDENT: [409, 'Student account is already in use'],
     STUDENT_CREATE_FAILED: [500, 'Student creation failed'],
     STUDENT_UPDATE_FAILED: [500, 'Student update failed'],
+    INVALID_COURSE_COMPLETIONS: [400, 'Completed course list is invalid'],
+    COURSE_NOT_FOUND: [404, 'One or more courses were not found'],
+    STUDENT_COMPLETIONS_UPDATE_FAILED: [500, 'Student completion update failed'],
     INVALID_PROGRAM_ID: [400, 'Invalid program ID'],
     INVALID_PROGRAM_INPUT: [400, 'Program information is invalid'],
     PROGRAM_NOT_FOUND: [404, 'Program not found'],
@@ -64,5 +67,7 @@ async function listBatches(req, res) { try { return res.json({ success: true, da
 async function createBatch(req, res) { try { const batch = await adminService.createBatch(req.body); return res.status(201).json({ success: true, data: { batch } }); } catch (error) { return errorResponse(error, res); } }
 async function createStudent(req, res) { try { const student = await adminService.createStudent(req.body); return res.status(201).json({ success: true, data: { student } }); } catch (error) { return errorResponse(error, res); } }
 async function updateStudent(req, res) { try { const student = await adminService.updateStudent(req.params.studentId, req.body); if (!student) return res.status(404).json({ success: false, message: 'Student not found' }); return res.json({ success: true, data: { student } }); } catch (error) { return errorResponse(error, res); } }
+async function listStudentCompletions(req, res) { try { const courses = await adminService.listStudentCompletions(req.params.studentId); if (!courses) return res.status(404).json({ success: false, message: 'Student not found' }); return res.json({ success: true, data: courses }); } catch (error) { return errorResponse(error, res); } }
+async function replaceStudentCompletions(req, res) { try { const courses = await adminService.replaceStudentCompletions(req.params.studentId, req.body); if (!courses) return res.status(404).json({ success: false, message: 'Student not found' }); return res.json({ success: true, data: courses }); } catch (error) { return errorResponse(error, res); } }
 
-module.exports = { list, getOne, updateStatus, updateRole, listDepartments, getDepartment, createDepartment, updateDepartment, listTeachers, createTeacher, listStudents, listPrograms, createProgram, listBatches, createBatch, createStudent, updateStudent };
+module.exports = { list, getOne, updateStatus, updateRole, listDepartments, getDepartment, createDepartment, updateDepartment, listTeachers, createTeacher, listStudents, listPrograms, createProgram, listBatches, createBatch, createStudent, updateStudent, listStudentCompletions, replaceStudentCompletions };

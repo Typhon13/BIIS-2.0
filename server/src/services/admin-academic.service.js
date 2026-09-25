@@ -56,6 +56,30 @@ async function validateTeachers(teacherIds) {
   }
 }
 
+async function coursePrerequisitesFromBody(body, courseId = null) {
+  if (!Array.isArray(body.prerequisites)) return [];
+
+  const prerequisiteIds = [
+    ...new Set(body.prerequisites.map((value) =>
+      positiveId(String(value || ''), 'INVALID_COURSE')
+    )),
+  ];
+
+  if (prerequisiteIds.length > 20) throw new Error('INVALID_COURSE');
+
+  for (const prerequisiteId of prerequisiteIds) {
+    if (courseId && String(prerequisiteId) === String(courseId)) {
+      throw new Error('INVALID_COURSE');
+    }
+
+    if (!(await academicRepository.findCourse(prerequisiteId))) {
+      throw new Error('COURSE_NOT_FOUND');
+    }
+  }
+
+  return prerequisiteIds;
+}
+
 async function listDepartments() {
   return academicRepository.listDepartments();
 }
@@ -104,6 +128,7 @@ async function createCourse(body) {
     type,
     totalMarks,
     departmentId,
+    prerequisites: await coursePrerequisitesFromBody(body),
   });
 }
 
@@ -145,6 +170,7 @@ async function updateCourse(courseIdValue, body) {
     type,
     totalMarks,
     departmentId,
+    prerequisites: await coursePrerequisitesFromBody(body, courseId),
   });
 
   if (!updated) throw new Error('COURSE_NOT_FOUND');

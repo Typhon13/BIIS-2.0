@@ -2,7 +2,7 @@ const express = require('express');
 const adminController = require('../controllers/admin.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorizeRoles } = require('../middleware/authorize.middleware');
-const { listRules, userIdRules, departmentIdRules, departmentListRules, teacherListRules, createTeacherRules, studentListRules, programListRules, createProgramRules, batchListRules, createBatchRules, createStudentRules, updateStudentRules, statusRules, roleRules, createDepartmentRules, updateDepartmentRules, handleAdminValidation } = require('../validators/admin.validator');
+const { listRules, userIdRules, departmentIdRules, departmentListRules, teacherListRules, createTeacherRules, studentListRules, programListRules, createProgramRules, batchListRules, createBatchRules, createStudentRules, updateStudentRules, studentCompletionListRules, studentCompletionRules, statusRules, roleRules, createDepartmentRules, updateDepartmentRules, handleAdminValidation } = require('../validators/admin.validator');
 
 const router = express.Router();
 const adminOnly = [authenticate, authorizeRoles('ADMIN')];
@@ -24,5 +24,7 @@ router.get('/batches', ...adminOnly, batchListRules(), handleAdminValidation, ad
 router.post('/batches', ...adminOnly, createBatchRules(), handleAdminValidation, adminController.createBatch);
 router.post('/students', ...adminOnly, createStudentRules(), handleAdminValidation, adminController.createStudent);
 router.patch('/students/:studentId', ...adminOnly, updateStudentRules(), handleAdminValidation, adminController.updateStudent);
+router.get('/students/:studentId/completions', ...adminOnly, studentCompletionListRules(), handleAdminValidation, adminController.listStudentCompletions);
+router.put('/students/:studentId/completions', ...adminOnly, studentCompletionRules(), handleAdminValidation, adminController.replaceStudentCompletions);
 
 module.exports = router;

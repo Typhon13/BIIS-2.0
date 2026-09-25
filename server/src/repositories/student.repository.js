@@ -144,6 +144,38 @@ const offeringSelect = `
              END
       END AS syllabus_id,
       COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'courseId', pc.course_id::text,
+            'code', pc.course_code,
+            'title', pc.course_title
+          )
+          ORDER BY pc.course_code
+        )
+          FROM course_prerequisites cp
+          JOIN courses pc ON pc.course_id = cp.prereq_course_id
+         WHERE cp.course_id = c.course_id
+      ), '[]'::jsonb) AS prerequisites,
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'courseId', pc.course_id::text,
+            'code', pc.course_code,
+            'title', pc.course_title
+          )
+          ORDER BY pc.course_code
+        )
+          FROM course_prerequisites cp
+          JOIN courses pc ON pc.course_id = cp.prereq_course_id
+         WHERE cp.course_id = c.course_id
+           AND NOT EXISTS (
+             SELECT 1
+               FROM student_course_completions scc
+              WHERE scc.student_id = $1
+                AND scc.course_id = cp.prereq_course_id
+           )
+      ), '[]'::jsonb) AS missing_prerequisites,
+      COALESCE((
         SELECT COUNT(*)::int
           FROM registrations counted
          WHERE counted.offered_course_id = oc.offered_course_id
@@ -197,7 +229,31 @@ function mapOffering(row) {
       credit: Number(row.credit),
       type: row.course_type,
       totalMarks: Number(row.course_total_marks),
+      prerequisites: Array.isArray(row.prerequisites)
+        ? row.prerequisites.map((course) => ({
+            courseId: String(course.courseId),
+            code: course.code,
+            title: course.title,
+          }))
+        : [],
     },
+    prerequisites: Array.isArray(row.prerequisites)
+      ? row.prerequisites.map((course) => ({
+          courseId: String(course.courseId),
+          code: course.code,
+          title: course.title,
+        }))
+      : [],
+    missingPrerequisites: Array.isArray(row.missing_prerequisites)
+      ? row.missing_prerequisites.map((course) => ({
+          courseId: String(course.courseId),
+          code: course.code,
+          title: course.title,
+        }))
+      : [],
+    meetsPrerequisites:
+      !Array.isArray(row.missing_prerequisites) ||
+      row.missing_prerequisites.length === 0,
     department: {
       departmentId: String(row.dept_id),
       name: row.dept_name,
@@ -304,6 +360,26 @@ async function enroll({
       row.seat_capacity
     ) {
       throw new Error('OFFERING_FULL');
+    }
+
+    const missingPrerequisites = await client.query(
+      `SELECT 1
+         FROM offered_courses oc
+         JOIN course_prerequisites cp
+           ON cp.course_id = oc.course_id
+        WHERE oc.offered_course_id = $1
+          AND NOT EXISTS (
+            SELECT 1
+              FROM student_course_completions scc
+             WHERE scc.student_id = $2
+               AND scc.course_id = cp.prereq_course_id
+          )
+        LIMIT 1`,
+      [offeringId, studentId]
+    );
+
+    if (missingPrerequisites.rows[0]) {
+      throw new Error('PREREQUISITES_NOT_MET');
     }
 
     const adviser = await client.query(
