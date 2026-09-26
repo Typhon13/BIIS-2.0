@@ -89,7 +89,7 @@ const navigationByRole = {
         'My Adviser',
         'Notices',
         'Change Password',
-        'Security settings',
+        
       ],
     },
     {
@@ -473,9 +473,7 @@ function DashboardPage() {
 
     if (
       activeItem ===
-        'Change Password' ||
-      activeItem ===
-        'Security settings'
+        'Change Password' 
     ) {
       return <PasswordChange />
     }

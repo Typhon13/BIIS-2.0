@@ -3028,3 +3028,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     grid-column: auto;
   }
 }
+
+
+/* Course prerequisite selector */
+.academic-prerequisites-fieldset { grid-column: 1 / -1; border: 1px solid var(--biis-border); border-radius: 6px; padding: 12px; margin: 0; }
+.academic-prerequisites-fieldset legend { font-weight: 700; padding: 0 6px; }
+.academic-field-help { margin: 0 0 10px; font-size: 12px; opacity: .75; }
+.academic-prerequisite-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 14px; max-height: 220px; overflow-y: auto; }
+.academic-prerequisite-option { display: flex !important; flex-direction: row !important; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--biis-border); border-radius: 5px; cursor: pointer; }
+.academic-prerequisite-option input { width: auto !important; margin: 0; }
