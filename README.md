@@ -56,7 +56,7 @@ The authentication interface deliberately follows the visual identity of the ori
 Users authenticate through a common login page and are subsequently provided with functionality appropriate to their account role.
 
 <p align="center">
-  <img src="docs/screenshots/login.png" alt="BIIS 2.0 Login Page" width="90%">
+  <img src="./docs/image.png" alt="BIIS 2.0 Login Page" width="90%">
 </p>
 
 ---
@@ -74,7 +74,7 @@ Students can inspect the courses for which they are currently registered.
 Each registration contains the relevant course number, syllabus information, course title and credit hours, with the total registered credit load calculated by the system.
 
 <p align="center">
-  <img src="docs/screenshots/course.png" alt="Registered and Enrolled Courses" width="90%">
+  <img src="./docs/course.png" alt="Registered and Enrolled Courses" width="90%">
 </p>
 
 Registration is connected to actual course offerings rather than merely to static course definitions. This allows term, teacher, section, prerequisite, and enrollment information to remain consistent throughout the application.
@@ -86,7 +86,7 @@ Registration is connected to actual course offerings rather than merely to stati
 The student grade interface provides both a concise course-level overview and the underlying assessment details.
 
 <p align="center">
-  <img src="docs/screenshots/studentresult.png" alt="Student Published Grades" width="90%">
+  <img src="./docs/studentresult.png" alt="Student Published Grades" width="90%">
 </p>
 
 Students can inspect:
@@ -109,7 +109,7 @@ Results only become available through the student interface after publication by
 Course-related communication is integrated into the student portal.
 
 <p align="center">
-  <img src="docs/screenshots/Notice.png" alt="Student Course Notices" width="90%">
+  <img src="./docs/Notice.png" alt="Student Course Notices" width="90%">
 </p>
 
 Notices retain their association with the relevant course and teacher, allowing students to distinguish general announcements from information relating to a particular enrolled course.
@@ -127,7 +127,7 @@ Teachers can access their courses, enrolled students, academic records, assessme
 ## Assigned Courses
 
 <p align="center">
-  <img src="docs/screenshots/assignedcourse.png" alt="Teacher Assigned Courses" width="90%">
+  <img src="./docs/assignedcourse.png" alt="Teacher Assigned Courses" width="90%">
 </p>
 
 The assigned-course view presents information including:
@@ -151,7 +151,7 @@ Theory and sessional courses are also handled separately. In particular, session
 Assessment is modeled as a collection of configurable components rather than as a single final-mark field.
 
 <p align="center">
-  <img src="docs/screenshots/markadding.png" alt="Teacher Gradebook and Assessment Management" width="90%">
+  <img src="./docs/markadding.png" alt="Teacher Gradebook and Assessment Management" width="90%">
 </p>
 
 A teacher can configure assessment components, enter individual student marks, inspect calculated totals and grades, and ultimately publish the result of a course.
@@ -186,7 +186,7 @@ Administrators maintain the institutional and academic data upon which the stude
 The centralized user-management interface provides an overview of system accounts and their access state.
 
 <p align="center">
-  <img src="docs/screenshots/studentlist.png" alt="Administrative User Management" width="90%">
+  <img src="./docs/studentlist.png" alt="Administrative User Management" width="90%">
 </p>
 
 Administrators can search and filter accounts and maintain information such as:
@@ -206,7 +206,7 @@ The separation between a system account and its academic profile allows authenti
 Student management combines account creation with the academic information required by the university structure.
 
 <p align="center">
-  <img src="docs/screenshots/studentmanagement.png" alt="Administrative Student Management" width="90%">
+  <img src="./docs/studentmanagement.png" alt="Administrative Student Management" width="90%">
 </p>
 
 Student records can be associated with:
@@ -229,7 +229,7 @@ Programs and batches can therefore be represented independently instead of being
 Administrators maintain the institution's course catalogue through the academic setup interface.
 
 <p align="center">
-  <img src="docs/screenshots/courseadding.png" alt="Course and Prerequisite Management" width="90%">
+  <img src="./docs/courseadding.png" alt="Course and Prerequisite Management" width="90%">
 </p>
 
 A course definition includes information such as:
@@ -706,13 +706,13 @@ client/dist/
 <table>
 <tr>
 <td width="50%" align="center">
-<img src="docs/screenshots/login.png" alt="Login" width="100%">
+<img src="./docs/image.png" alt="Login" width="100%">
 <br>
 <strong>Authentication</strong>
 </td>
 
 <td width="50%" align="center">
-<img src="docs/screenshots/assignedcourse.png" alt="Assigned Courses" width="100%">
+<img src="./docs/assignedcourse.png" alt="Assigned Courses" width="100%">
 <br>
 <strong>Teacher — Assigned Courses</strong>
 </td>
@@ -720,13 +720,13 @@ client/dist/
 
 <tr>
 <td width="50%" align="center">
-<img src="docs/screenshots/markadding.png" alt="Gradebook" width="100%">
+<img src="./docs/markadding.png" alt="Gradebook" width="100%">
 <br>
 <strong>Teacher — Gradebook</strong>
 </td>
 
 <td width="50%" align="center">
-<img src="docs/screenshots/course.png" alt="Registered Courses" width="100%">
+<img src="./docs/course.png" alt="Registered Courses" width="100%">
 <br>
 <strong>Student — Registered Courses</strong>
 </td>
@@ -734,13 +734,13 @@ client/dist/
 
 <tr>
 <td width="50%" align="center">
-<img src="docs/screenshots/studentresult.png" alt="Published Grades" width="100%">
+<img src="./docs/studentresult.png" alt="Published Grades" width="100%">
 <br>
 <strong>Student — Published Grades</strong>
 </td>
 
 <td width="50%" align="center">
-<img src="docs/screenshots/Notice.png" alt="Course Notices" width="100%">
+<img src="./docs/Notice.png" alt="Course Notices" width="100%">
 <br>
 <strong>Student — Course Notices</strong>
 </td>
@@ -748,13 +748,13 @@ client/dist/
 
 <tr>
 <td width="50%" align="center">
-<img src="docs/screenshots/courseadding.png" alt="Course Management" width="100%">
+<img src="./docs/courseadding.png" alt="Course Management" width="100%">
 <br>
 <strong>Administration — Courses & Prerequisites</strong>
 </td>
 
 <td width="50%" align="center">
-<img src="docs/screenshots/studentmanagement.png" alt="Student Management" width="100%">
+<img src="./docs/studentmanagement.png" alt="Student Management" width="100%">
 <br>
 <strong>Administration — Student Management</strong>
 </td>
@@ -762,7 +762,7 @@ client/dist/
 
 <tr>
 <td width="50%" align="center">
-<img src="docs/screenshots/studentlist.png" alt="User Management" width="100%">
+<img src="./docs/studentlist.png" alt="User Management" width="100%">
 <br>
 <strong>Administration — User Management</strong>
 </td>
