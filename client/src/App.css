@@ -2874,6 +2874,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   color: #4c5060;
 }
 
+.student-due-payment-form {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  gap: 7px;
+  min-width: 260px;
+}
+
+.student-due-payment-form input {
+  min-width: 0;
+}
+
+.student-due-payment-form button {
+  white-space: nowrap;
+}
+
 .dues-summary-panel .academic-panel-heading {
   align-items: flex-start;
 }
@@ -3088,6 +3103,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   .admin-service-search,
   .admin-due-description {
     grid-column: auto;
+  }
+
+  .student-due-payment-form {
+    grid-template-columns: 1fr;
+    min-width: 0;
   }
 }
 

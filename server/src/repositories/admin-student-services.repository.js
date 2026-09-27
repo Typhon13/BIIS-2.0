@@ -33,6 +33,7 @@ function mapDue(row) {
     amount: Number(row.amount),
     dueDate: row.due_date,
     status: row.status,
+    paymentTransactionId: row.payment_transaction_id,
     paidAt: row.paid_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -100,6 +101,7 @@ const dueSelect = `
     sd.amount,
     sd.due_date,
     sd.status,
+    sd.payment_transaction_id,
     sd.paid_at,
     sd.created_at,
     sd.updated_at,
@@ -466,6 +468,10 @@ async function updateDueStatus(dueId, status) {
     const updated = await client.query(
       `UPDATE student_dues
           SET status = $2,
+              payment_transaction_id = CASE
+                WHEN $2 = 'PAID' THEN payment_transaction_id
+                ELSE NULL
+              END,
               paid_at = CASE
                 WHEN $2 = 'PAID' THEN COALESCE(paid_at, CURRENT_TIMESTAMP)
                 ELSE NULL

@@ -27,6 +27,10 @@ function errorMessage(error) {
   return error.message || 'The operation could not be completed.'
 }
 
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10)
+}
+
 export default function AdminStudentServices() {
   const { accessToken } = useAuth()
   const [applications, setApplications] = useState([])
@@ -628,6 +632,7 @@ export default function AdminStudentServices() {
             Due date
             <input
               type="date"
+              min={todayIsoDate()}
               value={dueForm.dueDate}
               onChange={(event) =>
                 setDueForm((current) => ({
@@ -721,6 +726,7 @@ export default function AdminStudentServices() {
                   <th>Description</th>
                   <th>Amount</th>
                   <th>Due date</th>
+                  <th>Transaction ID</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -735,6 +741,7 @@ export default function AdminStudentServices() {
                     <td>{item.description}</td>
                     <td>BDT {Number(item.amount).toLocaleString()}</td>
                     <td>{item.dueDate ? formatDate(item.dueDate) : '—'}</td>
+                    <td>{item.paymentTransactionId || '—'}</td>
                     <td>
                       <select
                         className="admin-due-status-select"

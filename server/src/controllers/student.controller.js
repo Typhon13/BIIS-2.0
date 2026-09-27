@@ -26,6 +26,10 @@ const errors = {
     409,
     'You already have a pending profile change request',
   ],
+  INVALID_DUE_ID: [400, 'Invalid due ID'],
+  INVALID_TRANSACTION_ID: [400, 'Enter a transaction ID'],
+  DUE_NOT_FOUND: [404, 'Due record not found'],
+  DUE_ALREADY_CLEARED: [409, 'This due is already cleared'],
 };
 
 function handleError(error, res) {
@@ -241,6 +245,22 @@ async function dues(req, res) {
   }
 }
 
+async function submitDuePayment(req, res) {
+  try {
+    return res.json({
+      success: true,
+      message: 'Due cleared successfully',
+      data: await studentService.submitDuePayment(
+        req.user.userId,
+        req.params.dueId,
+        req.body
+      ),
+    });
+  } catch (error) {
+    return handleError(error, res);
+  }
+}
+
 module.exports = {
   listOfferings,
   enroll,
@@ -257,4 +277,5 @@ module.exports = {
   listScholarshipApplications,
   createScholarshipApplication,
   dues,
+  submitDuePayment,
 };

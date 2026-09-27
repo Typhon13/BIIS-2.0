@@ -60,6 +60,10 @@ function optionalSearch(value) {
   return cleaned || undefined;
 }
 
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 async function listApplications(query = {}) {
   return repository.listApplications({
     type: optionalChoice(
@@ -209,7 +213,9 @@ async function createDue(input = {}) {
     description.length > 500 ||
     !Number.isFinite(amount) ||
     amount <= 0 ||
-    (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate))
+    (dueDate &&
+      (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate) ||
+        dueDate < todayIsoDate()))
   ) {
     throw new Error('INVALID_DUE_INPUT');
   }

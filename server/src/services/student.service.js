@@ -269,6 +269,28 @@ async function dues(userId) {
   return studentRepository.listDues(studentId);
 }
 
+async function submitDuePayment(userId, dueIdValue, input = {}) {
+  const studentId = await requireStudent(userId);
+  const dueId = id(dueIdValue, 'INVALID_DUE_ID');
+  const transactionId = String(input.transactionId ?? '').trim();
+
+  if (!transactionId) {
+    throw new Error('INVALID_TRANSACTION_ID');
+  }
+
+  const due = await studentRepository.submitDuePayment({
+    studentId,
+    dueId,
+    transactionId,
+  });
+
+  if (!due) {
+    throw new Error('DUE_NOT_FOUND');
+  }
+
+  return due;
+}
+
 module.exports = {
   listOfferings,
   enroll,
@@ -285,4 +307,5 @@ module.exports = {
   createScholarshipApplication,
   listScholarshipApplications,
   dues,
+  submitDuePayment,
 };

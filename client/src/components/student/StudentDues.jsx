@@ -32,11 +32,18 @@ export default function StudentDues({
     useState(true)
   const [error, setError] =
     useState('')
+  const [message, setMessage] =
+    useState('')
+  const [busyDueId, setBusyDueId] =
+    useState('')
+  const [transactionIds, setTransactionIds] =
+    useState({})
 
   const loadDues =
     useCallback(async () => {
       setLoading(true)
       setError('')
+      setMessage('')
 
       try {
         const response =
@@ -125,6 +132,35 @@ export default function StudentDues({
   const hasLoadError =
     Boolean(error)
 
+  async function submitPayment(event, dueId) {
+    event.preventDefault()
+    setBusyDueId(dueId)
+    setError('')
+    setMessage('')
+
+    try {
+      await academicApi.submitDuePayment(
+        accessToken,
+        dueId,
+        transactionIds[dueId] || ''
+      )
+
+      setTransactionIds((current) => ({
+        ...current,
+        [dueId]: '',
+      }))
+      setMessage('Transaction ID submitted and due cleared.')
+      await loadDues()
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          'Transaction ID could not be submitted.'
+      )
+    } finally {
+      setBusyDueId('')
+    }
+  }
+
   const clearance =
     hasLoadError
       ? 'UNAVAILABLE'
@@ -140,6 +176,15 @@ export default function StudentDues({
           role="alert"
         >
           {error}
+        </p>
+      )}
+
+      {message && (
+        <p
+          className="academic-notice academic-success"
+          role="status"
+        >
+          {message}
         </p>
       )}
 
@@ -242,6 +287,7 @@ export default function StudentDues({
                   <th>Amount</th>
                   <th>Due date</th>
                   <th>Status</th>
+                  <th>Transaction ID</th>
                   <th>Paid</th>
                 </tr>
               </thead>
@@ -295,6 +341,58 @@ export default function StudentDues({
                             item.status
                           }
                         </span>
+                      </td>
+
+                      <td>
+                        {item.status === 'DUE' ? (
+                          <form
+                            className="student-due-payment-form"
+                            onSubmit={(event) =>
+                              submitPayment(
+                                event,
+                                item.dueId
+                              )
+                            }
+                          >
+                            <input
+                              value={
+                                transactionIds[
+                                  item.dueId
+                                ] || ''
+                              }
+                              onChange={(event) =>
+                                setTransactionIds(
+                                  (current) => ({
+                                    ...current,
+                                    [item.dueId]:
+                                      event.target.value,
+                                  })
+                                )
+                              }
+                              placeholder="Transaction ID"
+                              disabled={
+                                busyDueId ===
+                                item.dueId
+                              }
+                            />
+
+                            <button
+                              type="submit"
+                              disabled={
+                                busyDueId ===
+                                item.dueId
+                              }
+                            >
+                              {busyDueId ===
+                              item.dueId
+                                ? 'Submitting...'
+                                : 'Clear'}
+                            </button>
+                          </form>
+                        ) : (
+                          item.paymentTransactionId ||
+                          '-'
+                        )}
                       </td>
 
                       <td>

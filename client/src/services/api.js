@@ -908,4 +908,15 @@ export const academicApi = {
     )
   },
 
+  submitDuePayment(accessToken, dueId, transactionId) {
+    return authorized(
+      `/student/dues/${dueId}/payment`,
+      accessToken,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ transactionId }),
+      }
+    )
+  },
+
 }

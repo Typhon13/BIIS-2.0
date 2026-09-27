@@ -994,6 +994,7 @@ async function listDues(studentId) {
        amount,
        due_date,
        status,
+       payment_transaction_id,
        paid_at,
        created_at,
        updated_at
@@ -1017,10 +1018,86 @@ async function listDues(studentId) {
     amount: Number(row.amount),
     dueDate: row.due_date,
     status: row.status,
+    paymentTransactionId: row.payment_transaction_id,
     paidAt: row.paid_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
+}
+
+function mapDue(row) {
+  return {
+    dueId: String(row.due_id),
+    type: row.due_type,
+    description: row.description,
+    amount: Number(row.amount),
+    dueDate: row.due_date,
+    status: row.status,
+    paymentTransactionId: row.payment_transaction_id,
+    paidAt: row.paid_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function submitDuePayment({
+  studentId,
+  dueId,
+  transactionId,
+}) {
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const due = await client.query(
+      `SELECT due_id, status
+         FROM student_dues
+        WHERE due_id = $1
+          AND student_id = $2
+        FOR UPDATE`,
+      [dueId, studentId]
+    );
+
+    if (!due.rows[0]) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    if (due.rows[0].status !== 'DUE') {
+      throw new Error('DUE_ALREADY_CLEARED');
+    }
+
+    const result = await client.query(
+      `UPDATE student_dues
+          SET status = 'PAID',
+              payment_transaction_id = $3,
+              paid_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE due_id = $1
+          AND student_id = $2
+        RETURNING
+          due_id,
+          due_type,
+          description,
+          amount,
+          due_date,
+          status,
+          payment_transaction_id,
+          paid_at,
+          created_at,
+          updated_at`,
+      [dueId, studentId, transactionId]
+    );
+
+    await client.query('COMMIT');
+    return mapDue(result.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 module.exports = {
@@ -1038,4 +1115,5 @@ module.exports = {
   createApplication,
   listApplications,
   listDues,
+  submitDuePayment,
 };

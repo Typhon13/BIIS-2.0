@@ -44,6 +44,7 @@ router.post(
 router.get('/calendar', ...studentOnly, controller.calendar);
 router.get('/notices', ...studentOnly, controller.notices);
 router.get('/dues', ...studentOnly, controller.dues);
+router.patch('/dues/:dueId/payment', ...studentOnly, controller.submitDuePayment);
 
 // Kept explicitly for compatibility with the existing scholarship UI/API.
 router.get(

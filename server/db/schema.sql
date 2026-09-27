@@ -930,6 +930,7 @@ CREATE TABLE student_dues (
     amount        NUMERIC(12, 2) NOT NULL,
     due_date      DATE,
     status        VARCHAR(20) NOT NULL DEFAULT 'DUE',
+    payment_transaction_id TEXT,
     paid_at       TIMESTAMPTZ,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
