@@ -114,6 +114,56 @@ async function reviewApplication(applicationIdValue, input = {}) {
   return application;
 }
 
+async function listProfileChangeRequests(query = {}) {
+  return repository.listProfileChangeRequests({
+    status: optionalChoice(
+      query.status,
+      APPLICATION_STATUSES,
+      'INVALID_PROFILE_CHANGE_STATUS'
+    ),
+    search: optionalSearch(query.search),
+  });
+}
+
+async function reviewProfileChangeRequest(requestIdValue, reviewerUserId, input = {}) {
+  const requestId = positiveId(
+    requestIdValue,
+    'INVALID_PROFILE_CHANGE_ID'
+  );
+
+  const status = optionalChoice(
+    input.status,
+    ['APPROVED', 'REJECTED'],
+    'INVALID_PROFILE_CHANGE_STATUS'
+  );
+
+  if (!status) {
+    throw new Error('INVALID_PROFILE_CHANGE_STATUS');
+  }
+
+  const remarks =
+    input.remarks === undefined || input.remarks === null
+      ? ''
+      : String(input.remarks).trim();
+
+  if (remarks.length > 2000) {
+    throw new Error('INVALID_REMARKS');
+  }
+
+  const request = await repository.reviewProfileChangeRequest(
+    requestId,
+    status,
+    remarks,
+    reviewerUserId
+  );
+
+  if (!request) {
+    throw new Error('PROFILE_CHANGE_NOT_FOUND');
+  }
+
+  return request;
+}
+
 async function listDues(query = {}) {
   return repository.listDues({
     studentId:
@@ -201,6 +251,8 @@ async function updateDueStatus(dueIdValue, input = {}) {
 module.exports = {
   listApplications,
   reviewApplication,
+  listProfileChangeRequests,
+  reviewProfileChangeRequest,
   listDues,
   createDue,
   updateDueStatus,

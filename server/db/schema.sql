@@ -503,6 +503,8 @@ CREATE TABLE students (
     adviser_id             BIGINT,
     phone                  VARCHAR(30),
     current_level_term     VARCHAR(30),
+    academic_session       VARCHAR(50),
+    hall                   VARCHAR(100),
 
     CONSTRAINT fk_students_user
         FOREIGN KEY (user_id)
@@ -532,6 +534,53 @@ CREATE TABLE students (
 CREATE INDEX ix_students_dept_id ON students(dept_id);
 CREATE INDEX ix_students_batch_id ON students(batch_id);
 CREATE INDEX ix_students_adviser_id ON students(adviser_id);
+
+-- Student-submitted profile changes that must be approved by an admin.
+CREATE TABLE student_profile_change_requests (
+    request_id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    student_id          BIGINT NOT NULL,
+    requested_changes   JSONB NOT NULL,
+    status              VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+    submitted_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at         TIMESTAMPTZ,
+    reviewer_user_id    BIGINT,
+    reviewer_remarks    TEXT,
+
+    CONSTRAINT fk_student_profile_change_student
+        FOREIGN KEY (student_id)
+        REFERENCES students(student_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_student_profile_change_reviewer
+        FOREIGN KEY (reviewer_user_id)
+        REFERENCES users(user_id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL,
+
+    CONSTRAINT ck_student_profile_change_status
+        CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+
+    CONSTRAINT ck_student_profile_change_review
+        CHECK (
+            (status = 'PENDING' AND reviewed_at IS NULL)
+            OR
+            (status IN ('APPROVED', 'REJECTED') AND reviewed_at IS NOT NULL)
+        ),
+
+    CONSTRAINT ck_student_profile_change_object
+        CHECK (jsonb_typeof(requested_changes) = 'object')
+);
+
+CREATE INDEX ix_student_profile_change_student
+    ON student_profile_change_requests(student_id);
+
+CREATE INDEX ix_student_profile_change_status
+    ON student_profile_change_requests(status);
+
+CREATE UNIQUE INDEX ux_student_pending_profile_change
+    ON student_profile_change_requests(student_id)
+    WHERE status = 'PENDING';
 
 -- Admin-maintained course completion records used for prerequisite checks.
 CREATE TABLE student_course_completions (

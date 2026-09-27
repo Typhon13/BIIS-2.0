@@ -49,6 +49,57 @@ function requiredText(value, minimum, maximum) {
   return cleaned;
 }
 
+function optionalText(value, maximum) {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+
+  const cleaned = String(value).trim();
+
+  if (!cleaned) return null;
+  if (cleaned.length > maximum) return undefined;
+
+  return cleaned;
+}
+
+function profileChangeInput(input = {}) {
+  const changes = {};
+
+  const textFields = [
+    ['name', 150],
+    ['phone', 30],
+    ['currentLevelTerm', 30],
+    ['academicSession', 50],
+    ['hall', 100],
+  ];
+
+  for (const [field, maximum] of textFields) {
+    if (Object.prototype.hasOwnProperty.call(input, field)) {
+      const value = optionalText(input[field], maximum);
+
+      if (value === undefined || (field === 'name' && !value)) {
+        throw new Error('INVALID_PROFILE_CHANGE');
+      }
+
+      changes[field] = value;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'email')) {
+    const email = optionalText(input.email, 255);
+
+    if (
+      !email ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    ) {
+      throw new Error('INVALID_PROFILE_CHANGE');
+    }
+
+    changes.email = email;
+  }
+
+  return changes;
+}
+
 async function requireStudent(userId) {
   const student = await studentRepository.findStudentIdByUserId(userId);
 
@@ -116,6 +167,43 @@ async function profile(userId) {
   }
 
   return value;
+}
+
+async function submitProfileChange(userId, input = {}) {
+  const studentId = await requireStudent(userId);
+  const current = await studentRepository.findProfileByUserId(userId);
+  const changes = profileChangeInput(input);
+
+  const comparableCurrent = {
+    name: current.name,
+    email: current.email,
+    phone: current.phone || null,
+    currentLevelTerm:
+      current.level === 'Not assigned' ? null : current.level,
+    academicSession:
+      current.academicSession === 'Not assigned'
+        ? null
+        : current.academicSession,
+    hall: current.hall === 'Not assigned' ? null : current.hall,
+  };
+
+  for (const [field, value] of Object.entries(changes)) {
+    if ((value || null) === (comparableCurrent[field] || null)) {
+      delete changes[field];
+    }
+  }
+
+  if (!Object.keys(changes).length) {
+    throw new Error('EMPTY_PROFILE_CHANGE');
+  }
+
+  return studentRepository.createProfileChangeRequest(studentId, changes);
+}
+
+async function listProfileChangeRequests(userId) {
+  return studentRepository.listProfileChangeRequests(
+    await requireStudent(userId)
+  );
 }
 
 async function calendar() {
@@ -188,6 +276,8 @@ module.exports = {
   listEnrollments,
   listResults,
   profile,
+  submitProfileChange,
+  listProfileChangeRequests,
   calendar,
   notices,
   createApplication,

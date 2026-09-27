@@ -445,6 +445,29 @@ export const adminApi = {
     )
   },
 
+  listProfileChangeRequests(accessToken, filters = {}) {
+    const parameters = new URLSearchParams()
+
+    if (filters.status) parameters.set('status', filters.status)
+    if (filters.search) parameters.set('search', filters.search)
+
+    return authorized(
+      `/admin/student-services/profile-change-requests?${parameters.toString()}`,
+      accessToken
+    )
+  },
+
+  reviewProfileChangeRequest(accessToken, requestId, decision) {
+    return authorized(
+      `/admin/student-services/profile-change-requests/${requestId}`,
+      accessToken,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(decision),
+      }
+    )
+  },
+
   listServiceDues(accessToken, filters = {}) {
     const parameters = new URLSearchParams()
 
@@ -802,6 +825,24 @@ export const academicApi = {
     return authorized(
       '/student/profile',
       accessToken
+    )
+  },
+
+  studentProfileChangeRequests(accessToken) {
+    return authorized(
+      '/student/profile/change-requests',
+      accessToken
+    )
+  },
+
+  submitStudentProfileChange(accessToken, changes) {
+    return authorized(
+      '/student/profile/change-requests',
+      accessToken,
+      {
+        method: 'POST',
+        body: JSON.stringify(changes),
+      }
     )
   },
 

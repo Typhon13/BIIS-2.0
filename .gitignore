@@ -10,3 +10,10 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Generated explanation/checklist handouts
+generated-docs/
+BIIS_Checklist_Code_Guide.pdf
+BIIS_Checklist_Code_Guide_v2.pdf
+BIIS_Checklist_Code_Guide.md
+BIIS_Checklist_Code_Guide_Clean.md

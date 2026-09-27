@@ -20,6 +20,12 @@ const errors = {
     409,
     'You already have a pending application of this type',
   ],
+  INVALID_PROFILE_CHANGE: [400, 'Enter valid profile information'],
+  EMPTY_PROFILE_CHANGE: [400, 'Change at least one profile field before submitting'],
+  DUPLICATE_PENDING_PROFILE_CHANGE: [
+    409,
+    'You already have a pending profile change request',
+  ],
 };
 
 function handleError(error, res) {
@@ -106,6 +112,34 @@ async function profile(req, res) {
     return res.json({
       success: true,
       data: await studentService.profile(req.user.userId),
+    });
+  } catch (error) {
+    return handleError(error, res);
+  }
+}
+
+async function submitProfileChange(req, res) {
+  try {
+    return res.status(201).json({
+      success: true,
+      message: 'Profile change request submitted',
+      data: await studentService.submitProfileChange(
+        req.user.userId,
+        req.body
+      ),
+    });
+  } catch (error) {
+    return handleError(error, res);
+  }
+}
+
+async function listProfileChangeRequests(req, res) {
+  try {
+    return res.json({
+      success: true,
+      data: await studentService.listProfileChangeRequests(
+        req.user.userId
+      ),
     });
   } catch (error) {
     return handleError(error, res);
@@ -214,6 +248,8 @@ module.exports = {
   listEnrollments,
   listResults,
   profile,
+  submitProfileChange,
+  listProfileChangeRequests,
   calendar,
   notices,
   listApplications,

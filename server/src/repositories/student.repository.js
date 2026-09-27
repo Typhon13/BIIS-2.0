@@ -23,7 +23,10 @@ async function findProfileByUserId(userId) {
         s.student_id,
         s.student_id_number,
         s.name,
+        s.phone,
         s.current_level_term,
+        s.academic_session,
+        s.hall,
         u.username,
         u.email,
         u.account_status,
@@ -57,6 +60,7 @@ async function findProfileByUserId(userId) {
     studentId: String(row.student_id),
     studentNumber: row.student_id_number,
     name: row.name,
+    phone: row.phone,
     username: row.username,
     email: row.email,
     department: row.dept_name || null,
@@ -64,8 +68,8 @@ async function findProfileByUserId(userId) {
       row.dept_short_name || null,
     level: row.level_term,
     term: row.level_term,
-    academicSession: 'Not assigned',
-    hall: 'Not assigned',
+    academicSession: row.academic_session || 'Not assigned',
+    hall: row.hall || 'Not assigned',
     accountStatus: row.account_status,
 
     adviser: row.adviser_id
@@ -77,6 +81,72 @@ async function findProfileByUserId(userId) {
         }
       : null,
   };
+}
+
+function mapProfileChangeRequest(row) {
+  return {
+    requestId: String(row.request_id),
+    status: row.status,
+    requestedChanges: row.requested_changes || {},
+    submittedAt: row.submitted_at,
+    reviewedAt: row.reviewed_at,
+    reviewerRemarks: row.reviewer_remarks,
+  };
+}
+
+async function createProfileChangeRequest(studentId, changes) {
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const result = await client.query(
+      `INSERT INTO student_profile_change_requests (
+         student_id,
+         requested_changes
+       )
+       VALUES ($1, $2::jsonb)
+       RETURNING
+         request_id,
+         requested_changes,
+         status,
+         submitted_at,
+         reviewed_at,
+         reviewer_remarks`,
+      [studentId, JSON.stringify(changes)]
+    );
+
+    await client.query('COMMIT');
+    return mapProfileChangeRequest(result.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+
+    if (error.code === '23505') {
+      throw new Error('DUPLICATE_PENDING_PROFILE_CHANGE');
+    }
+
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function listProfileChangeRequests(studentId) {
+  const result = await db.query(
+    `SELECT
+       request_id,
+       requested_changes,
+       status,
+       submitted_at,
+       reviewed_at,
+       reviewer_remarks
+     FROM student_profile_change_requests
+     WHERE student_id = $1
+     ORDER BY submitted_at DESC, request_id DESC`,
+    [studentId]
+  );
+
+  return result.rows.map(mapProfileChangeRequest);
 }
 
 async function listCalendar() {
@@ -956,6 +1026,8 @@ async function listDues(studentId) {
 module.exports = {
   findStudentIdByUserId,
   findProfileByUserId,
+  createProfileChangeRequest,
+  listProfileChangeRequests,
   listCalendar,
   listAvailableOfferings,
   enroll,

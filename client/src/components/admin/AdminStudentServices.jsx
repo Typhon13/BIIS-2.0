@@ -30,6 +30,7 @@ function errorMessage(error) {
 export default function AdminStudentServices() {
   const { accessToken } = useAuth()
   const [applications, setApplications] = useState([])
+  const [profileRequests, setProfileRequests] = useState([])
   const [dues, setDues] = useState([])
   const [students, setStudents] = useState([])
   const [applicationFilters, setApplicationFilters] = useState({
@@ -42,6 +43,10 @@ export default function AdminStudentServices() {
     status: '',
     search: '',
   })
+  const [profileRequestFilters, setProfileRequestFilters] = useState({
+    status: 'PENDING',
+    search: '',
+  })
   const [dueForm, setDueForm] = useState({
     studentId: '',
     type: 'HALL',
@@ -50,6 +55,7 @@ export default function AdminStudentServices() {
     dueDate: '',
   })
   const [reviewNotes, setReviewNotes] = useState({})
+  const [profileReviewNotes, setProfileReviewNotes] = useState({})
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -71,6 +77,14 @@ export default function AdminStudentServices() {
     setDues(response.data || [])
   }, [accessToken, dueFilters])
 
+  const loadProfileRequests = useCallback(async () => {
+    const response = await adminApi.listProfileChangeRequests(
+      accessToken,
+      profileRequestFilters
+    )
+    setProfileRequests(response.data || [])
+  }, [accessToken, profileRequestFilters])
+
   const loadStudents = useCallback(async () => {
     const response = await adminApi.listStudents(accessToken, {
       page: 1,
@@ -86,6 +100,7 @@ export default function AdminStudentServices() {
     try {
       await Promise.all([
         loadApplications(),
+        loadProfileRequests(),
         loadDues(),
         loadStudents(),
       ])
@@ -94,7 +109,7 @@ export default function AdminStudentServices() {
     } finally {
       setLoading(false)
     }
-  }, [loadApplications, loadDues, loadStudents])
+  }, [loadApplications, loadProfileRequests, loadDues, loadStudents])
 
   useEffect(() => {
     const task = window.setTimeout(refreshAll, 0)
@@ -116,6 +131,13 @@ export default function AdminStudentServices() {
     [dues]
   )
 
+  const pendingProfileCount = useMemo(
+    () =>
+      profileRequests.filter((item) => item.status === 'PENDING')
+        .length,
+    [profileRequests]
+  )
+
   async function decide(applicationId, status) {
     setBusy(true)
     setError('')
@@ -133,6 +155,30 @@ export default function AdminStudentServices() {
 
       setMessage(`Application ${status.toLowerCase()} successfully.`)
       await loadApplications()
+    } catch (requestError) {
+      setError(errorMessage(requestError))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function decideProfileRequest(requestId, status) {
+    setBusy(true)
+    setError('')
+    setMessage('')
+
+    try {
+      await adminApi.reviewProfileChangeRequest(
+        accessToken,
+        requestId,
+        {
+          status,
+          remarks: profileReviewNotes[requestId] || '',
+        }
+      )
+
+      setMessage(`Profile request ${status.toLowerCase()} successfully.`)
+      await loadProfileRequests()
     } catch (requestError) {
       setError(errorMessage(requestError))
     } finally {
@@ -233,10 +279,139 @@ export default function AdminStudentServices() {
           <strong>{dues.length}</strong>
         </article>
         <article>
+          <span>Profile requests</span>
+          <strong>{pendingProfileCount}</strong>
+        </article>
+        <article>
           <span>Outstanding shown</span>
           <strong>BDT {outstandingTotal.toLocaleString()}</strong>
         </article>
       </div>
+
+      <section className="academic-panel admin-service-panel">
+        <div className="academic-panel-heading">
+          <div>
+            <h2>Profile Change Requests</h2>
+            <p>Approve student-submitted changes before they update official profile records.</p>
+          </div>
+        </div>
+
+        <div className="admin-service-filters">
+          <label>
+            Status
+            <select
+              value={profileRequestFilters.status}
+              onChange={(event) =>
+                setProfileRequestFilters((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+            >
+              <option value="">All statuses</option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </label>
+
+          <label className="admin-service-search">
+            Search student
+            <input
+              value={profileRequestFilters.search}
+              onChange={(event) =>
+                setProfileRequestFilters((current) => ({
+                  ...current,
+                  search: event.target.value,
+                }))
+              }
+              placeholder="Name, ID, username or email"
+            />
+          </label>
+        </div>
+
+        {loading ? (
+          <p className="admin-table-message">Loading profile requests...</p>
+        ) : !profileRequests.length ? (
+          <p className="academic-empty">No profile requests match these filters.</p>
+        ) : (
+          <div className="academic-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Requested changes</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th>Review</th>
+                </tr>
+              </thead>
+              <tbody>
+                {profileRequests.map((item) => (
+                  <tr key={item.requestId}>
+                    <td>
+                      <strong>{item.student.name}</strong>
+                      <small>{item.student.studentNumber}</small>
+                    </td>
+                    <td className="admin-profile-change-list">
+                      {Object.entries(item.requestedChanges || {}).map(([field, value]) => (
+                        <small key={field}>
+                          <strong>{field.replace(/([A-Z])/g, ' $1')}</strong>: {value || 'Clear value'}
+                        </small>
+                      ))}
+                    </td>
+                    <td>{formatDate(item.submittedAt)}</td>
+                    <td>
+                      <span className={`student-service-status status-${item.status.toLowerCase()}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td>
+                      {item.status === 'PENDING' ? (
+                        <div className="admin-review-controls">
+                          <input
+                            value={profileReviewNotes[item.requestId] || ''}
+                            onChange={(event) =>
+                              setProfileReviewNotes((current) => ({
+                                ...current,
+                                [item.requestId]: event.target.value,
+                              }))
+                            }
+                            maxLength="2000"
+                            placeholder="Review remarks (optional)"
+                          />
+                          <div>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => decideProfileRequest(item.requestId, 'APPROVED')}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              className="danger-button"
+                              disabled={busy}
+                              onClick={() => decideProfileRequest(item.requestId, 'REJECTED')}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="admin-reviewed-copy">
+                          <span>{item.reviewerRemarks || 'No remarks'}</span>
+                          <small>{item.reviewedAt ? formatDate(item.reviewedAt) : '-'}</small>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <section className="academic-panel admin-service-panel">
         <div className="academic-panel-heading">

@@ -46,6 +46,25 @@ function mapDue(row) {
   };
 }
 
+function mapProfileChangeRequest(row) {
+  return {
+    requestId: String(row.request_id),
+    status: row.status,
+    requestedChanges: row.requested_changes || {},
+    submittedAt: row.submitted_at,
+    reviewedAt: row.reviewed_at,
+    reviewerRemarks: row.reviewer_remarks,
+    student: {
+      studentId: String(row.student_id),
+      studentNumber: row.student_id_number,
+      name: row.student_name,
+      username: row.username,
+      email: row.email,
+      department: row.dept_short_name || row.dept_name || null,
+    },
+  };
+}
+
 const applicationSelect = `
   SELECT
     a.application_id,
@@ -93,6 +112,30 @@ const dueSelect = `
   FROM student_dues sd
   JOIN students s
     ON s.student_id = sd.student_id
+  JOIN users u
+    ON u.user_id = s.user_id
+  LEFT JOIN departments d
+    ON d.dept_id = s.dept_id
+`;
+
+const profileChangeSelect = `
+  SELECT
+    pcr.request_id,
+    pcr.requested_changes,
+    pcr.status,
+    pcr.submitted_at,
+    pcr.reviewed_at,
+    pcr.reviewer_remarks,
+    s.student_id,
+    s.student_id_number,
+    s.name AS student_name,
+    u.username,
+    u.email,
+    d.dept_name,
+    d.dept_short_name
+  FROM student_profile_change_requests pcr
+  JOIN students s
+    ON s.student_id = pcr.student_id
   JOIN users u
     ON u.user_id = s.user_id
   LEFT JOIN departments d
@@ -175,6 +218,139 @@ async function reviewApplication(applicationId, status, remarks) {
       : null;
   } catch (error) {
     await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function listProfileChangeRequests({ status, search }) {
+  const values = [];
+  const filters = [];
+
+  if (status) {
+    values.push(status);
+    filters.push(`pcr.status = $${values.length}`);
+  }
+
+  if (search) {
+    values.push(`%${search}%`);
+    const p = `$${values.length}`;
+    filters.push(
+      `(LOWER(s.name) LIKE LOWER(${p}) OR ` +
+        `LOWER(s.student_id_number) LIKE LOWER(${p}) OR ` +
+        `LOWER(u.username) LIKE LOWER(${p}) OR ` +
+        `LOWER(u.email) LIKE LOWER(${p}))`
+    );
+  }
+
+  const where = filters.length
+    ? `WHERE ${filters.join(' AND ')}`
+    : '';
+
+  const result = await db.query(
+    `${profileChangeSelect}
+     ${where}
+     ORDER BY
+       (pcr.status = 'PENDING') DESC,
+       pcr.submitted_at DESC,
+       pcr.request_id DESC`,
+    values
+  );
+
+  return result.rows.map(mapProfileChangeRequest);
+}
+
+async function reviewProfileChangeRequest(requestId, status, remarks, reviewerUserId) {
+  const client = await db.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const request = await client.query(
+      `SELECT
+         pcr.request_id,
+         pcr.student_id,
+         pcr.requested_changes,
+         pcr.status,
+         s.user_id
+       FROM student_profile_change_requests pcr
+       JOIN students s
+         ON s.student_id = pcr.student_id
+       WHERE pcr.request_id = $1
+       FOR UPDATE`,
+      [requestId]
+    );
+
+    const row = request.rows[0];
+
+    if (!row) {
+      await client.query('COMMIT');
+      return null;
+    }
+
+    if (row.status !== 'PENDING') {
+      throw new Error('PROFILE_CHANGE_ALREADY_REVIEWED');
+    }
+
+    if (status === 'APPROVED') {
+      const changes = row.requested_changes || {};
+
+      await client.query(
+        `UPDATE users
+            SET email = COALESCE($2, email)
+          WHERE user_id = $1`,
+        [row.user_id, changes.email ?? null]
+      );
+
+      await client.query(
+        `UPDATE students
+            SET name = COALESCE($2, name),
+                phone = CASE WHEN $3 THEN $4 ELSE phone END,
+                current_level_term = CASE WHEN $5 THEN $6 ELSE current_level_term END,
+                academic_session = CASE WHEN $7 THEN $8 ELSE academic_session END,
+                hall = CASE WHEN $9 THEN $10 ELSE hall END
+          WHERE student_id = $1`,
+        [
+          row.student_id,
+          changes.name ?? null,
+          Object.prototype.hasOwnProperty.call(changes, 'phone'),
+          changes.phone ?? null,
+          Object.prototype.hasOwnProperty.call(changes, 'currentLevelTerm'),
+          changes.currentLevelTerm ?? null,
+          Object.prototype.hasOwnProperty.call(changes, 'academicSession'),
+          changes.academicSession ?? null,
+          Object.prototype.hasOwnProperty.call(changes, 'hall'),
+          changes.hall ?? null,
+        ]
+      );
+    }
+
+    await client.query(
+      `UPDATE student_profile_change_requests
+          SET status = $2,
+              reviewed_at = CURRENT_TIMESTAMP,
+              reviewer_user_id = $3,
+              reviewer_remarks = $4
+        WHERE request_id = $1`,
+      [requestId, status, reviewerUserId, remarks || null]
+    );
+
+    const result = await client.query(
+      `${profileChangeSelect}
+       WHERE pcr.request_id = $1`,
+      [requestId]
+    );
+
+    await client.query('COMMIT');
+    return result.rows[0] ? mapProfileChangeRequest(result.rows[0]) : null;
+  } catch (error) {
+    await client.query('ROLLBACK');
+
+    if (error.code === '23505') {
+      throw new Error('DUPLICATE_PROFILE_EMAIL');
+    }
+
     throw error;
   } finally {
     client.release();
@@ -324,6 +500,8 @@ async function updateDueStatus(dueId, status) {
 module.exports = {
   listApplications,
   reviewApplication,
+  listProfileChangeRequests,
+  reviewProfileChangeRequest,
   findStudent,
   listDues,
   createDue,

@@ -12,6 +12,16 @@ router.patch(
   ...adminOnly,
   controller.reviewApplication
 );
+router.get(
+  '/profile-change-requests',
+  ...adminOnly,
+  controller.listProfileChangeRequests
+);
+router.patch(
+  '/profile-change-requests/:requestId',
+  ...adminOnly,
+  controller.reviewProfileChangeRequest
+);
 router.get('/dues', ...adminOnly, controller.listDues);
 router.post('/dues', ...adminOnly, controller.createDue);
 router.patch('/dues/:dueId', ...adminOnly, controller.updateDueStatus);

@@ -2893,7 +2893,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 
 .student-services-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -2974,16 +2974,77 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 }
 
 .admin-service-application-copy,
-.admin-reviewed-copy {
+.admin-reviewed-copy,
+.admin-profile-change-list {
   display: grid;
   gap: 4px;
   max-width: 390px;
 }
 
 .admin-service-application-copy small,
-.admin-reviewed-copy small {
+.admin-reviewed-copy small,
+.admin-profile-change-list small {
   color: var(--biis-muted);
   line-height: 1.35;
+}
+
+.admin-profile-change-list strong {
+  color: var(--biis-ink);
+  text-transform: capitalize;
+}
+
+.profile-change-form {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-top: 1px solid var(--biis-border);
+  background: #fbfaf7;
+}
+
+.profile-change-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-change-heading h3 {
+  margin: 0;
+  color: var(--biis-ink);
+  font-size: 17px;
+}
+
+.profile-change-heading p {
+  margin: 4px 0 0;
+  color: var(--biis-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.profile-change-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-change-grid label {
+  display: grid;
+  gap: 5px;
+  color: var(--biis-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.profile-change-grid input {
+  min-width: 0;
+}
+
+.profile-change-form > button {
+  justify-self: end;
+}
+
+.profile-request-history {
+  border-top: 1px solid var(--biis-border);
 }
 
 .admin-review-controls {
@@ -3019,7 +3080,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   .student-services-summary-grid,
   .dues-status-summary,
   .admin-service-filters,
-  .admin-due-form {
+  .admin-due-form,
+  .profile-change-grid {
     grid-template-columns: 1fr;
   }
 

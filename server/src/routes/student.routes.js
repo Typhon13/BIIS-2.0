@@ -31,6 +31,16 @@ router.get(
 );
 router.get('/results', ...studentOnly, controller.listResults);
 router.get('/profile', ...studentOnly, controller.profile);
+router.get(
+  '/profile/change-requests',
+  ...studentOnly,
+  controller.listProfileChangeRequests
+);
+router.post(
+  '/profile/change-requests',
+  ...studentOnly,
+  controller.submitProfileChange
+);
 router.get('/calendar', ...studentOnly, controller.calendar);
 router.get('/notices', ...studentOnly, controller.notices);
 router.get('/dues', ...studentOnly, controller.dues);

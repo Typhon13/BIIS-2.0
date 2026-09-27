@@ -88,7 +88,17 @@ export default function StudentDashboard({
     results: [],
     notices: [],
     profile: null,
+    profileRequests: [],
     calendar: [],
+  })
+
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    currentLevelTerm: '',
+    academicSession: '',
+    hall: '',
   })
 
   const [loading, setLoading] =
@@ -121,6 +131,7 @@ const loadAll = useCallback(
           results,
           notices,
           profile,
+          profileRequests,
           calendar,
         ] = await Promise.all([
           safeFetchArray(academicApi.studentOfferings(accessToken)),
@@ -128,17 +139,41 @@ const loadAll = useCallback(
           safeFetchArray(academicApi.studentResults(accessToken)),
           safeFetchArray(academicApi.studentNotices(accessToken)),
           safeFetchProfile(academicApi.studentProfile(accessToken)),
+          safeFetchArray(academicApi.studentProfileChangeRequests(accessToken)),
           safeFetchArray(academicApi.studentCalendar(accessToken)),
         ])
+
+        const profileData = profile.data
 
         setData({
           offerings: offerings.data,
           enrollments: enrollments.data,
           results: results.data,
           notices: notices.data,
-          profile: profile.data,
+          profile: profileData,
+          profileRequests: profileRequests.data,
           calendar: calendar.data,
         })
+
+        if (profileData) {
+          setProfileForm({
+            name: profileData.name || '',
+            email: profileData.email || '',
+            phone: profileData.phone || '',
+            currentLevelTerm:
+              profileData.level === 'Not assigned'
+                ? ''
+                : profileData.level || '',
+            academicSession:
+              profileData.academicSession === 'Not assigned'
+                ? ''
+                : profileData.academicSession || '',
+            hall:
+              profileData.hall === 'Not assigned'
+                ? ''
+                : profileData.hall || '',
+          })
+        }
       } catch (requestError) {
         setError(
           requestError.message ||
@@ -302,6 +337,33 @@ const loadAll = useCallback(
     }
   }
 
+  async function submitProfileChange(event) {
+    event.preventDefault()
+    setBusyId('profile-change')
+    setError('')
+    setMessage('')
+
+    try {
+      await academicApi.submitStudentProfileChange(
+        accessToken,
+        profileForm
+      )
+
+      setMessage(
+        'Profile change request submitted for admin approval.'
+      )
+
+      await loadAll()
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          'Profile change request could not be submitted.'
+      )
+    } finally {
+      setBusyId('')
+    }
+  }
+
   if (loading) {
     return (
       <p className="academic-loading">
@@ -314,67 +376,139 @@ const loadAll = useCallback(
 
   if (activeItem === 'My Information') {
     const profile = data.profile
+    const pendingProfileRequest = data.profileRequests.find(
+      (request) => request.status === 'PENDING'
+    )
 
     content = (
       <Panel title="My Information">
         {profile ? (
-          <div className="profile-grid">
-            {[
-              [
-                'Name',
-                profile.name,
-              ],
+          <>
+            <div className="profile-grid">
+              {[
+                ['Name', profile.name],
+                ['Username', profile.username],
+                ['Email', profile.email],
+                ['Phone', profile.phone],
+                ['Student number', profile.studentNumber],
+                ['Department', profile.department],
+                ['Level / Term', profile.level],
+                ['Academic session', profile.academicSession],
+                ['Hall', profile.hall],
+                ['Account status', profile.accountStatus],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <strong>{label}</strong>
 
-              [
-                'Username',
-                profile.username,
-              ],
+                  <span>
+                    {value ||
+                      'Not assigned'}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-              [
-                'Email',
-                profile.email,
-              ],
+            <form
+              className="profile-change-form"
+              onSubmit={submitProfileChange}
+            >
+              <div className="profile-change-heading">
+                <div>
+                  <h3>Request profile update</h3>
+                  <p>
+                    Changes are applied after an admin approves the request.
+                  </p>
+                </div>
 
-              [
-                'Student number',
-                profile.studentNumber,
-              ],
-
-              [
-                'Department',
-                profile.department,
-              ],
-
-              [
-                'Level / Term',
-                profile.level,
-              ],
-
-              [
-                'Academic session',
-                profile.academicSession,
-              ],
-
-              [
-                'Hall',
-                profile.hall,
-              ],
-
-              [
-                'Account status',
-                profile.accountStatus,
-              ],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <strong>{label}</strong>
-
-                <span>
-                  {value ||
-                    'Not assigned'}
-                </span>
+                {pendingProfileRequest && (
+                  <span className="student-service-status status-pending">
+                    PENDING
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
+
+              <div className="profile-change-grid">
+                {[
+                  ['name', 'Name', 'text'],
+                  ['email', 'Email', 'email'],
+                  ['phone', 'Phone', 'text'],
+                  ['currentLevelTerm', 'Level / Term', 'text'],
+                  ['academicSession', 'Academic session', 'text'],
+                  ['hall', 'Hall', 'text'],
+                ].map(([field, label, type]) => (
+                  <label key={field}>
+                    {label}
+                    <input
+                      type={type}
+                      value={profileForm[field]}
+                      disabled={Boolean(pendingProfileRequest)}
+                      onChange={(event) =>
+                        setProfileForm((current) => ({
+                          ...current,
+                          [field]: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <button
+                type="submit"
+                disabled={
+                  busyId === 'profile-change' ||
+                  Boolean(pendingProfileRequest)
+                }
+              >
+                {busyId === 'profile-change'
+                  ? 'Submitting...'
+                  : pendingProfileRequest
+                    ? 'Awaiting admin approval'
+                    : 'Submit request'}
+              </button>
+            </form>
+
+            {data.profileRequests.length > 0 && (
+              <div className="academic-table-wrap profile-request-history">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Submitted</th>
+                      <th>Changes</th>
+                      <th>Status</th>
+                      <th>Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.profileRequests.map((request) => (
+                      <tr key={request.requestId}>
+                        <td>
+                          {new Date(
+                            request.submittedAt
+                          ).toLocaleDateString()}
+                        </td>
+                        <td>
+                          {Object.keys(
+                            request.requestedChanges || {}
+                          ).join(', ')}
+                        </td>
+                        <td>
+                          <span
+                            className={`student-service-status status-${request.status.toLowerCase()}`}
+                          >
+                            {request.status}
+                          </span>
+                        </td>
+                        <td>
+                          {request.reviewerRemarks || 'None'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         ) : (
           <Empty>
             No profile data available.
